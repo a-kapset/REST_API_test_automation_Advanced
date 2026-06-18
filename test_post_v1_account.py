@@ -1,8 +1,10 @@
 import requests
+from pprint import pprint
+from json import loads
 
 def test_post_v1_account():
     
-    login = 'a22'
+    login = 'ab1'
     email = f"{login}@test.com"
     password = 'qwerty123'    
     
@@ -13,8 +15,8 @@ def test_post_v1_account():
         'password': password,
     }
 
-    response = requests.post('http://185.185.143.231:5051/v1/account', json=json_data)
-    print('\n>>>',response.status_code)
+    response = requests.post('http://185.185.143.231:5051/v1/account', json=json_data)    
+    assert response.status_code == 201, f"User has not been created. Response: {response.json()}"
     
     
     # get emails
@@ -23,24 +25,34 @@ def test_post_v1_account():
     }
 
     response = requests.get('http://185.185.143.231:5025/api/v2/messages', params=params, verify=False)
-    print('>>>',response.status_code)
+    assert response.status_code == 200, f"Mails have not been recieved. Response: {response.json()}"
     
+    # get activation token
+    for item in response.json()['items']:
+        user_data = loads(item['Content']['Body'])
+        user_login = user_data['Login']
+        
+        if user_login == login:        
+            token = user_data['ConfirmationLinkUrl'].split('/')[-1]
     
-    # TODO: get activation token
-    # ...
+    assert token is not None
     
     
     # activate
-    response = requests.put('http://185.185.143.231:5051/v1/account/32ebc26a-9f97-41e5-bf7b-090527d91da2')
-    print('>>>',response.status_code)
+    headers = {
+        'accept': 'text/plain'
+    }
+    
+    response = requests.put(f"http://185.185.143.231:5051/v1/account/{token}", headers=headers)
+    assert response.status_code == 200, f"User has not been activated. Response: {response.json()}"
 
 
     # auth
     json_data = {
-        'login': 'a22',
-        'password': 'qwerty123',
+        'login': login,
+        'password': password,
         'rememberMe': True,
     }
 
     response = requests.post('http://185.185.143.231:5051/v1/account/login', json=json_data)
-    print('>>>',response.status_code)
+    assert response.status_code == 200, f"User has not been logged in. Response: {response.json()}"
