@@ -26,6 +26,7 @@ wheels/
 # Virtual environments
 .env
 .venv
+.venv-sdet-adv
 env/
 venv/
 ENV/
