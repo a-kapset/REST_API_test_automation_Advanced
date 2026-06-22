@@ -12,6 +12,12 @@ structlog.configure(
     ]
 )
 
+structlog.configure(
+    processors=[
+        structlog.processors.JSONRenderer(indent=4, ensure_ascii=True, sort_keys=True)
+    ]
+)
+
 def test_post_v1_account():
 
     dm_api_configuration = Configuration(host='http://185.185.143.231:5051', disable_log=False)
