@@ -1,29 +1,16 @@
-# Блок 1.
-# Домашнее задание 1.
-# Реализация сценария:
-#      - Регистрируемся
-#      - Получаем активационный токен
-#      - Активируем 
-#      - Заходим в приложение
-#      - Меняем емейл
-#      - Пытаемся войти, получаем 403
-#      - На почте находим токен по новому емейлу для подтверждения смены емейла
-#      - Активируем новый токен
-#      - Заходим в приложение с новым емейлом
-
 import time
 from json import loads
 from dm_api_account.apis.account_api import AccountApi
 from dm_api_account.apis.login_api import LoginApi
 from api_mailhog.apis.mailhog_api import MailhogApi
 
-def test_post_v1_account():
+def test_put_v1_account_email():
     
     account_api = AccountApi(host='http://185.185.143.231:5051')
     login_api = LoginApi(host='http://185.185.143.231:5051')
     mailhog_api = MailhogApi(host='http://185.185.143.231:5025')
     
-    login = f'hw_1_{int(time.time())}'
+    login = f'bc_{int(time.time())}'
     email = f"{login}@test.com"
     password = 'qwerty123'
     changed_email = f"changed_{email}"
@@ -102,7 +89,7 @@ def test_post_v1_account():
     assert response.status_code == 200, f"User has not been logged in. Response: {response.json()}"
 
 
-
+# TODO: move to helpers
 def get_activation_token_by_login(login, response):
     token = None
     
