@@ -1,6 +1,7 @@
 from restclient.configuration import Configuration
 from api_mailhog.apis.mailhog_api import MailhogApi
 
+# Facade implementation
 
 class MailHogApi:
     def __init__(self, configuration: Configuration):

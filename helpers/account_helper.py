@@ -2,6 +2,8 @@ from services.dm_api_account import DmApiAccount
 from services.api_mailhog import MailHogApi
 from json import loads
 
+# Composite facade implementation
+
 class AccountHelper:
     def __init__(self, dm_account_api: DmApiAccount, mailhog_api: MailHogApi):
         self.dm_account_api = dm_account_api
