@@ -1,10 +1,9 @@
 import time
 import structlog
 from json import loads
-from dm_api_account.apis.account_api import AccountApi
-from dm_api_account.apis.login_api import LoginApi
-from api_mailhog.apis.mailhog_api import MailhogApi
 from restclient.configuration import Configuration
+from services.dm_api_account import DmApiAccount
+from services.api_mailhog import MailHogApi
 
 structlog.configure(
     processors=[
@@ -17,9 +16,8 @@ def test_post_v1_account():
     dm_api_configuration = Configuration(host='http://185.185.143.231:5051', disable_log=False)
     mailhog_api_configuration = Configuration(host='http://185.185.143.231:5025', disable_log=True)
 
-    account_api = AccountApi(dm_api_configuration)
-    login_api = LoginApi(dm_api_configuration)
-    mailhog_api = MailhogApi(mailhog_api_configuration)
+    account = DmApiAccount(dm_api_configuration)
+    mailhog = MailHogApi(mailhog_api_configuration)
 
     login = f'ab{int(time.time())}'
     email = f"{login}@test.com"
@@ -31,19 +29,20 @@ def test_post_v1_account():
         'email': email,
         'password': password,
     }
-    response = account_api.post_v1_account(json_data=json_data)
+    response = account.account_api.post_v1_account(json_data=json_data)
     assert response.status_code == 201, f"User has not been created. Response: {response.json()}"
 
 
-    # Получаем активационный токен
-    response = mailhog_api.get_api_v2_messages()
+    # get emails
+    response = mailhog.mailhog_api.get_api_v2_messages()
     assert response.status_code == 200, f"Mails have not been recieved. Response: {response.json()}"
+
+    # get activation token
     token = get_activation_token_by_login(login, response)
     assert token is not None
 
-
-    # Активируем пользователя
-    response = account_api.put_v1_account_token(token=token)
+    # activate
+    response = account.account_api.put_v1_account_token(token=token)
     assert response.status_code == 200, f"User has not been activated. Response: {response.json()}"
 
 
@@ -53,7 +52,7 @@ def test_post_v1_account():
         'password': password,
         'rememberMe': True
     }
-    response = login_api.post_v1_account_login(json_data)
+    response = account.login_api.post_v1_account_login(json_data)
     assert response.status_code == 200, f"User has not been logged in. Response: {response.json()}"
 
 
