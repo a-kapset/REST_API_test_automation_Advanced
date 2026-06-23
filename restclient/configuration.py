@@ -1,4 +1,4 @@
-class Configuration():
+class Configuration:
     def __init__(self, host: str, headers: dict = None, disable_log: bool = True): # type: ignore
         self.host = host
         self.headers = headers

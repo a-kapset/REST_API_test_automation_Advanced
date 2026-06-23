@@ -4,7 +4,7 @@ import curlify
 from requests import JSONDecodeError, session
 from restclient.configuration import Configuration
 
-class RestClient():
+class RestClient:
     def __init__(self, configuration: Configuration):
         self.host = configuration.host
         self.headers = configuration.headers
