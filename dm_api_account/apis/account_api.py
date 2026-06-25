@@ -45,3 +45,21 @@ class AccountApi():
         )
         
         return response
+    
+    def put_v1_account_email(self, json_data):
+        """
+        Change registered user email
+
+        Args:
+            json_data
+
+        Returns:
+            _type_: Response
+        """
+        
+        response = requests.put(
+            url=f"{self.host}/v1/account/email",
+            json=json_data
+        )
+
+        return response
