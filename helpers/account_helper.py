@@ -1,7 +1,12 @@
 import time
+from json import loads
+from retrying import retry
 from services.dm_api_account import DmApiAccount
 from services.api_mailhog import MailHogApi
-from json import loads
+
+def retry_if_result_none(result):
+    """Return True if we should retry (in this case when result is None), False otherwise"""
+    return result is None
 
 # Custom decorator implementaion
 def retrier(n: int):
@@ -84,8 +89,9 @@ class AccountHelper:
         assert resp_acc_login.status_code == status_code, f"Error occurred during logging in. Response: {resp_acc_login.json()}"
         
         return resp_acc_login
-        
-    @retrier(5)
+    
+    
+    @retry(stop_max_attempt_number=5, retry_on_result=retry_if_result_none, wait_fixed=1000)
     def get_activation_token_by_login(self, login):
         token = None
         resp_get_messages = self.mailhog_api.mailhog_api.get_api_v2_messages()        
