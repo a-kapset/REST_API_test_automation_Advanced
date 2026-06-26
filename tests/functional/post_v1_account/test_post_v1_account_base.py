@@ -11,8 +11,8 @@ structlog.configure(
     ]
 )
 
-def test_post_v1_account():
-    
+def test_post_v1_account_base():
+
     dm_api_configuration = Configuration(host='http://185.185.143.231:5051', disable_log=False)
     mailhog_api_configuration = Configuration(host='http://185.185.143.231:5025', disable_log=True)
 
@@ -25,4 +25,6 @@ def test_post_v1_account():
     email = f"{login}@test.com"
     password = 'qwerty123'
 
-    account_helper.create_new_user(login=login, password=password, email=email)
+    account_helper.create_new_user(login=login, password=password, email=email) 
+    account_helper.register_a_user(login=login)
+    account_helper.user_login(login=login, password=password, rememberMe=True)

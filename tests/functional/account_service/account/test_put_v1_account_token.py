@@ -1,48 +1,29 @@
 import time
-from json import loads
-from dm_api_account.apis.account_api import AccountApi
-from api_mailhog.apis.mailhog_api import MailhogApi
+import structlog
+from helpers.account_helper import AccountHelper
+from restclient.configuration import Configuration
+from services.dm_api_account import DmApiAccount
+from services.api_mailhog import MailHogApi
+
+structlog.configure(
+    processors=[
+        structlog.processors.JSONRenderer(indent=4, ensure_ascii=True, sort_keys=True)
+    ]
+)
 
 def test_put_v1_account_token():
     
-    account_api = AccountApi(host='http://185.185.143.231:5051')
-    mailhog_api = MailhogApi(host='http://185.185.143.231:5025')
-    
-    login = f'cd_{int(time.time())}'
+    dm_api_configuration = Configuration(host='http://185.185.143.231:5051', disable_log=False)
+    mailhog_api_configuration = Configuration(host='http://185.185.143.231:5025', disable_log=True)
+
+    account = DmApiAccount(dm_api_configuration)
+    mailhog = MailHogApi(mailhog_api_configuration)
+
+    account_helper = AccountHelper(dm_account_api=account, mailhog_api=mailhog)
+
+    login = f'cd{int(time.time())}'
     email = f"{login}@test.com"
     password = 'qwerty123'
-
-    # Регистрируемся
-    json_data = {
-        'login': login,
-        'email': email,
-        'password': password,
-    }
-    response = account_api.post_v1_account(json_data=json_data)
-    assert response.status_code == 201, f"User has not been created. Response: {response.json()}"
     
-    
-    # Получаем активационный токен
-    response = mailhog_api.get_api_v2_messages()
-    assert response.status_code == 200, f"Mails have not been recieved. Response: {response.json()}"    
-    token = get_activation_token_by_login(login, response)    
-    assert token is not None  
-    
-    
-    # Активируем пользователя
-    response = account_api.put_v1_account_token(token=token)
-    assert response.status_code == 200, f"User has not been activated. Response: {response.json()}"
-
-
-# TODO: move to helpers
-def get_activation_token_by_login(login, response):
-    token = None
-    
-    for item in response.json()['items']:
-        user_data = loads(item['Content']['Body'])
-        user_login = user_data['Login']
-        
-        if user_login == login:        
-            token = user_data['ConfirmationLinkUrl'].split('/')[-1]
-            
-    return token
+    account_helper.create_new_user(login=login, password=password, email=email)
+    account_helper.register_a_user(login=login)
