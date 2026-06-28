@@ -90,6 +90,11 @@ class AccountHelper:
         
         return resp_acc_login
     
+
+    def get_user_info(self, status_code: int = 200):
+        resp_acc = self.dm_account_api.account_api.get_v1_account()
+        assert resp_acc.status_code == status_code, f"Error occurred during getting user's info. Response: {resp_acc.json()}"
+    
     
     @retry(stop_max_attempt_number=5, retry_on_result=retry_if_result_none, wait_fixed=1000)
     def _get_activation_token_by_login(self, login):
