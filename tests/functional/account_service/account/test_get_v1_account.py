@@ -1,3 +1,2 @@
-def test_get_v1_account(registered_auth_account_helper_fxt):
-    account_api = registered_auth_account_helper_fxt
-    account_api.get_user_info()
+def test_get_v1_account(auth_account_helper_fxt):
+    auth_account_helper_fxt.get_user_info()
