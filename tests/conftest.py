@@ -54,6 +54,6 @@ def auth_account_helper_fxt(mailhog_api_fxt):
     account_client = DmApiAccount(dm_api_configuration)
     account_helper = AccountHelper(dm_account_api=account_client, mailhog_api=mailhog_api_fxt)
 
-    account_helper.authenticate_client(login="ab1782550dsd132", password='qwerty123')
+    account_helper._authenticate_client(login="ab1782550dsd132", password='qwerty123')
 
     return account_helper

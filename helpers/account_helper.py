@@ -54,7 +54,7 @@ class AccountHelper:
     
     def register_a_user(self, login: str):
         
-        token = self.get_activation_token_by_login(login=login)
+        token = self._get_activation_token_by_login(login=login)
         assert token is not None
         
         resp_acc_token = self.dm_account_api.account_api.put_v1_account_token(token=token)
@@ -90,21 +90,9 @@ class AccountHelper:
         
         return resp_acc_login
     
-
-    def authenticate_client(self, login: str, password: str):
-        resp_login = self.user_login(login=login, password=password)
-
-        auth_token = {
-            'x-dm-auth-token': resp_login.headers['x-dm-auth-token']
-        }
-
-        self.dm_account_api.account_api.set_headers(auth_token)
-        self.dm_account_api.login_api.set_headers(auth_token)
-
-    
     
     @retry(stop_max_attempt_number=5, retry_on_result=retry_if_result_none, wait_fixed=1000)
-    def get_activation_token_by_login(self, login):
+    def _get_activation_token_by_login(self, login):
         token = None
         resp_get_messages = self.mailhog_api.mailhog_api.get_api_v2_messages()        
         
@@ -122,3 +110,14 @@ class AccountHelper:
                 token = user_data['ConfirmationLinkUrl'].split('/')[-1]
                 
         return token
+    
+
+    def _authenticate_client(self, login: str, password: str):
+        resp_login = self.user_login(login=login, password=password)
+
+        auth_token = {
+            'x-dm-auth-token': resp_login.headers['x-dm-auth-token']
+        }
+
+        self.dm_account_api.account_api.set_headers(auth_token)
+        self.dm_account_api.login_api.set_headers(auth_token)
