@@ -1,6 +1,7 @@
 import time
 import pytest
 import structlog
+from collections import namedtuple
 from helpers.account_helper import AccountHelper
 from restclient.configuration import Configuration
 from services.dm_api_account import DmApiAccount
@@ -29,12 +30,21 @@ def account_helper_fxt(dm_account_api_fxt, mailhog_api_fxt):
     account_helper = AccountHelper(dm_account_api=dm_account_api_fxt, mailhog_api=mailhog_api_fxt)
     return account_helper
 
-
-def test_post_v1_account_base(account_helper_fxt):
+@pytest.fixture
+def user_data_fxt():
     login = f'ab{int(time.time())}'
     email = f"{login}@test.com"
     password = 'qwerty123'
+    User = namedtuple('User', ['login', 'password', 'email'])
+    user = User(login=login, password=password, email=email)
+    return user
 
+
+def test_post_v1_account_base(account_helper_fxt, user_data_fxt):
+    login = user_data_fxt.login
+    password = user_data_fxt.password
+    email = user_data_fxt.email
+    
     account_helper_fxt.create_new_user(login=login, password=password, email=email) 
     account_helper_fxt.register_a_user(login=login)
     account_helper_fxt.user_login(login=login, password=password, rememberMe=True)
