@@ -87,10 +87,22 @@ def registered_auth_account_helper_fxt(mailhog_api_fxt, registered_user_data_fxt
 def _get_user_data():
     login = f'ab{int(time.time_ns())}'
     email = f"{login}@test.com"
+    updated_email = f"upd_{login}@test.com"
     password = 'qwerty123'
     new_password = 'qwerty456'
-    User = namedtuple('User', ['login', 'password', 'email', 'new_password'])
-    user = User(login=login, email=email, password=password, new_password=new_password)
+
+    User = namedtuple(
+        'User',
+        ['login', 'email', 'updated_email', 'password','new_password']
+    )
+
+    user = User(
+        login=login,
+        email=email,
+        updated_email=updated_email,
+        password=password,
+        new_password=new_password        
+    )
     
     return user
     
