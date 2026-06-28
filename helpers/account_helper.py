@@ -90,6 +90,18 @@ class AccountHelper:
         
         return resp_acc_login
     
+
+    def authenticate_client(self, login: str, password: str):
+        resp_login = self.user_login(login=login, password=password)
+
+        auth_token = {
+            'x-dm-auth-token': resp_login.headers['x-dm-auth-token']
+        }
+
+        self.dm_account_api.account_api.set_headers(auth_token)
+        self.dm_account_api.login_api.set_headers(auth_token)
+
+    
     
     @retry(stop_max_attempt_number=5, retry_on_result=retry_if_result_none, wait_fixed=1000)
     def get_activation_token_by_login(self, login):

@@ -59,3 +59,21 @@ class AccountApi(RestClient):
         )
 
         return response
+    
+    def get_v1_account(self, **kwargs):
+        """
+        Get current user
+
+        Args:
+            **kwargs
+
+        Returns:
+            _type_: Response
+        """
+        
+        response = self.get(
+            path="/v1/account",
+            **kwargs
+        )
+        
+        return response
