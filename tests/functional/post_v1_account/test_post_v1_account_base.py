@@ -1,4 +1,5 @@
 import time
+import pytest
 import structlog
 from helpers.account_helper import AccountHelper
 from restclient.configuration import Configuration
@@ -11,20 +12,29 @@ structlog.configure(
     ]
 )
 
-def test_post_v1_account_base():
-
-    dm_api_configuration = Configuration(host='http://185.185.143.231:5051', disable_log=False)
+@pytest.fixture
+def mailhog_api_fxt():
     mailhog_api_configuration = Configuration(host='http://185.185.143.231:5025', disable_log=True)
+    mailhog_client = MailHogApi(mailhog_api_configuration)
+    return mailhog_client
 
-    account = DmApiAccount(dm_api_configuration)
-    mailhog = MailHogApi(mailhog_api_configuration)
+@pytest.fixture
+def dm_account_api_fxt():
+    dm_api_configuration = Configuration(host='http://185.185.143.231:5051', disable_log=False)
+    account_client = DmApiAccount(dm_api_configuration)
+    return account_client
 
-    account_helper = AccountHelper(dm_account_api=account, mailhog_api=mailhog)
+@pytest.fixture
+def account_helper_fxt(dm_account_api_fxt, mailhog_api_fxt):
+    account_helper = AccountHelper(dm_account_api=dm_account_api_fxt, mailhog_api=mailhog_api_fxt)
+    return account_helper
 
+
+def test_post_v1_account_base(account_helper_fxt):
     login = f'ab{int(time.time())}'
     email = f"{login}@test.com"
     password = 'qwerty123'
 
-    account_helper.create_new_user(login=login, password=password, email=email) 
-    account_helper.register_a_user(login=login)
-    account_helper.user_login(login=login, password=password, rememberMe=True)
+    account_helper_fxt.create_new_user(login=login, password=password, email=email) 
+    account_helper_fxt.register_a_user(login=login)
+    account_helper_fxt.user_login(login=login, password=password, rememberMe=True)
