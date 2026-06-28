@@ -121,6 +121,20 @@ class AccountHelper:
         assert resp_pass_change.status_code == 200, f"Error occurred during resetting user's password. Response: {resp_pass_change.json()}"
 
         return resp_pass_change
+    
+
+    def user_logout(self):
+        resp_logout = self.dm_account_api.login_api.delete_v1_account_login()
+        assert resp_logout.status_code == 204, f"Error occurred during logging out. Response: {resp_logout.json()}"
+
+        return resp_logout
+    
+
+    def user_logout_all(self):
+        resp_logout_all = self.dm_account_api.login_api.delete_v1_account_login_all()
+        assert resp_logout_all.status_code == 204, f"Error occurred during logging out from all devices. Response: {resp_logout_all.json()}"
+
+        return resp_logout_all
 
 
     @retry(stop_max_attempt_number=5, retry_on_result=retry_if_result_none, wait_fixed=1000)

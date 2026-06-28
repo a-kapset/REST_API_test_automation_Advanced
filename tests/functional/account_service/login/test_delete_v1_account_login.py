@@ -1,0 +1,2 @@
+def test_delete_v1_account_login(registered_auth_account_helper_fxt):
+    registered_auth_account_helper_fxt.user_logout_all()
