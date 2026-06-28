@@ -1,5 +1,5 @@
 import time
-from json import loads
+from json import loads, JSONDecodeError
 from retrying import retry
 from services.dm_api_account import DmApiAccount
 from services.api_mailhog import MailHogApi
@@ -97,8 +97,14 @@ class AccountHelper:
         resp_get_messages = self.mailhog_api.mailhog_api.get_api_v2_messages()        
         
         for item in resp_get_messages.json()['items']:
-            user_data = loads(item['Content']['Body'])
-            user_login = user_data['Login']
+            # MailHog is a shared inbox: skip messages whose body is not the
+            # expected activation JSON (non-JSON bodies or missing fields).
+            try:
+                user_data = loads(item['Content']['Body'])
+                user_login = user_data['Login']
+
+            except (JSONDecodeError, KeyError, TypeError):
+                continue
             
             if user_login == login:        
                 token = user_data['ConfirmationLinkUrl'].split('/')[-1]
