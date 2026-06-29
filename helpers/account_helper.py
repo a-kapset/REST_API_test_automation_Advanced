@@ -1,9 +1,37 @@
+import time
+from json import loads
+from retrying import retry
 from services.dm_api_account import DmApiAccount
 from services.api_mailhog import MailHogApi
-from json import loads
+
+def retry_if_result_none(result):
+    """Return True if we should retry (in this case when result is None), False otherwise"""
+    return result is None
+
+# Custom decorator implementaion
+def retrier(n: int):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            token = None
+            counter = 0
+            
+            while token is None:
+                token = func(*args, **kwargs)
+                counter += 1
+                
+                if token:
+                    return token
+                
+                if counter > 5:
+                    raise AssertionError(f'Activation token is not recieved after {n} attempts')
+                
+                time.sleep(1)
+        
+        return wrapper
+        
+    return decorator
 
 # Composite facade implementation
-
 class AccountHelper:
     def __init__(self, dm_account_api: DmApiAccount, mailhog_api: MailHogApi):
         self.dm_account_api = dm_account_api
@@ -18,24 +46,21 @@ class AccountHelper:
             'password': password,
         }       
         
-        response_post_v1_account = self.dm_account_api.account_api.post_v1_account(json_data=json_data)
-        assert response_post_v1_account.status_code == status_code, f"Error occurred during user creation. Response: {response_post_v1_account.json()}"
+        resp_acc = self.dm_account_api.account_api.post_v1_account(json_data=json_data)
+        assert resp_acc.status_code == status_code, f"Error occurred during user creation. Response: {resp_acc.json()}"
         
-        return response_post_v1_account
+        return resp_acc
     
     
     def register_a_user(self, login: str):
         
-        response_get_api_v2_messages = self.mailhog_api.mailhog_api.get_api_v2_messages()
-        assert response_get_api_v2_messages.status_code == 200, f"Error occurred during mail receiving. Response: {response_get_api_v2_messages.json()}"
-        
-        token = self.get_activation_token_by_login(login=login, response=response_get_api_v2_messages)
+        token = self.get_activation_token_by_login(login=login)
         assert token is not None
         
-        response_put_v1_account_token = self.dm_account_api.account_api.put_v1_account_token(token=token)
-        assert response_put_v1_account_token.status_code == 200, f"Error occurred during user activation. Response: {response_put_v1_account_token.json()}"
+        resp_acc_token = self.dm_account_api.account_api.put_v1_account_token(token=token)
+        assert resp_acc_token.status_code == 200, f"Error occurred during user activation. Response: {resp_acc_token.json()}"
         
-        return response_put_v1_account_token
+        return resp_acc_token
     
     
     def change_email(self, login: str, password: str, email: str):
@@ -45,10 +70,11 @@ class AccountHelper:
             'password': password,
             'email': email
         }
-        response_put_v1_account_email = self.dm_account_api.account_api.put_v1_account_email(json_data)
-        assert response_put_v1_account_email.status_code == 200, f"Error occurred during email updating. Response: {response_put_v1_account_email.json()}"
         
-        return response_put_v1_account_email
+        resp_acc_email = self.dm_account_api.account_api.put_v1_account_email(json_data)
+        assert resp_acc_email.status_code == 200, f"Error occurred during email updating. Response: {resp_acc_email.json()}"
+        
+        return resp_acc_email
     
     
     def user_login(self, login: str, password: str, rememberMe: bool = True, status_code: int = 200):
@@ -59,21 +85,22 @@ class AccountHelper:
             'rememberMe': rememberMe
         }
         
-        response = self.dm_account_api.login_api.post_v1_account_login(json_data)        
-        assert response.status_code == status_code, f"Error occurred during logging in. Response: {response.json()}"
+        resp_acc_login = self.dm_account_api.login_api.post_v1_account_login(json_data)        
+        assert resp_acc_login.status_code == status_code, f"Error occurred during logging in. Response: {resp_acc_login.json()}"
         
-        return response
-        
+        return resp_acc_login
     
-    @staticmethod
-    def get_activation_token_by_login(login, response):
+    
+    @retry(stop_max_attempt_number=5, retry_on_result=retry_if_result_none, wait_fixed=1000)
+    def get_activation_token_by_login(self, login):
         token = None
+        resp_get_messages = self.mailhog_api.mailhog_api.get_api_v2_messages()        
         
-        for item in response.json()['items']:
+        for item in resp_get_messages.json()['items']:
             user_data = loads(item['Content']['Body'])
             user_login = user_data['Login']
             
             if user_login == login:        
                 token = user_data['ConfirmationLinkUrl'].split('/')[-1]
                 
-        return token    
+        return token
