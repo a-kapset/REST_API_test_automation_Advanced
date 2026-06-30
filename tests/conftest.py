@@ -59,7 +59,7 @@ def auth_account_helper_fxt(mailhog_api_fxt):
     
     # TODO: replace hardcoded values with more flexible logic,
     # or remove this fixture since there is registered_auth_account_helper_fxt
-    account_helper._authenticate_client(login="ab1782550dsd132", password='qwerty123')
+    account_helper.authenticate_client(login="ab1782550dsd132", password='qwerty123')
 
     return account_helper
 
@@ -77,7 +77,7 @@ def registered_auth_account_helper_fxt(mailhog_api_fxt, registered_user_data_fxt
     
     account_helper.create_new_user(login=login, password=password, email=email)
     account_helper.register_a_user(login=login)
-    account_helper._authenticate_client(login=login, password=password)
+    account_helper.authenticate_client(login=login, password=password)
 
     # TODO: remove this user after tests?
 
