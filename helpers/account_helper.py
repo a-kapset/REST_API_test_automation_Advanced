@@ -91,9 +91,12 @@ class AccountHelper:
         return resp_acc_login
     
 
-    def get_user_info(self, status_code: int = 200):
-        resp_acc = self.dm_account_api.account_api.get_v1_account()
-        assert resp_acc.status_code == status_code, f"Error occurred during getting user's info. Response: {resp_acc.json()}"
+    def get_user_info(self, token=None, **kwargs):
+        if token:
+            kwargs['headers'] = {'x-dm-auth-token': token}
+            
+        resp_acc = self.dm_account_api.account_api.get_v1_account(**kwargs)
+        assert resp_acc.status_code == 200, f"Error occurred during getting user's info. Response: {resp_acc.json()}"
 
         return resp_acc
     
@@ -123,15 +126,21 @@ class AccountHelper:
         return resp_pass_change
     
 
-    def user_logout(self):
-        resp_logout = self.dm_account_api.login_api.delete_v1_account_login()
+    def user_logout(self, token=None, **kwargs):
+        if token:
+            kwargs['headers'] = {'x-dm-auth-token': token}
+            
+        resp_logout = self.dm_account_api.login_api.delete_v1_account_login(**kwargs)
         assert resp_logout.status_code == 204, f"Error occurred during logging out. Response: {resp_logout.json()}"
 
         return resp_logout
     
 
-    def user_logout_all(self):
-        resp_logout_all = self.dm_account_api.login_api.delete_v1_account_login_all()
+    def user_logout_all(self, token=None, **kwargs):
+        if token:
+            kwargs['headers'] = {'x-dm-auth-token': token}
+            
+        resp_logout_all = self.dm_account_api.login_api.delete_v1_account_login_all(**kwargs)
         assert resp_logout_all.status_code == 204, f"Error occurred during logging out from all devices. Response: {resp_logout_all.json()}"
 
         return resp_logout_all
@@ -171,7 +180,7 @@ class AccountHelper:
         return None
     
 
-    def _authenticate_client(self, login: str, password: str):
+    def authenticate_client(self, login: str, password: str):
         resp_login = self.user_login(login=login, password=password)
 
         auth_token = {

@@ -1,9 +1,9 @@
 def test_put_v1_account_password(
-        registered_auth_account_helper_fxt,
-        registered_user_data_fxt
+        account_helper_auth_new_fxt,
+        user_data_fxt
 ):
-    account_api = registered_auth_account_helper_fxt
-    user_data = registered_user_data_fxt
+    account_api = account_helper_auth_new_fxt
+    user_data = user_data_fxt
 
     account_api.change_password(
         login=user_data.login,
