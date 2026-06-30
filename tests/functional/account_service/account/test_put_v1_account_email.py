@@ -11,20 +11,12 @@ structlog.configure(
     ]
 )
 
-def test_put_v1_account_email():
-    
-    dm_api_configuration = Configuration(host='http://185.185.143.231:5051', disable_log=False)
-    mailhog_api_configuration = Configuration(host='http://185.185.143.231:5025', disable_log=True)
-
-    account = DmApiAccount(dm_api_configuration)
-    mailhog = MailHogApi(mailhog_api_configuration)
-
-    account_helper = AccountHelper(dm_account_api=account, mailhog_api=mailhog)
-
-    login = f'bc{int(time.time())}'
-    email = f"{login}@test.com"
-    password = 'qwerty123'
-    changed_email = f"changed_{email}"
+def test_put_v1_account_email(account_helper_fxt, new_user_data_fxt):
+    account_helper = account_helper_fxt
+    login = new_user_data_fxt.login
+    email = new_user_data_fxt.email
+    password = new_user_data_fxt.password
+    changed_email = new_user_data_fxt.updated_email
 
     account_helper.create_new_user(login=login, password=password, email=email)
     account_helper.register_a_user(login=login)

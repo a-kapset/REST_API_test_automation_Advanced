@@ -8,14 +8,19 @@ from restclient.configuration import Configuration
 
 class RestClient:
     def __init__(self, configuration: Configuration):
-        self.host = configuration.host
-        self.headers = configuration.headers
-        self.disable_log = configuration.disable_log
         self.session = session()
+        self.host = configuration.host        
+        self.set_headers(configuration.headers)
+        self.disable_log = configuration.disable_log        
         self.log = structlog.get_logger(__name__).bind(service='api')   # __name__ - logger will have currnet class name
                                                                         # service='api' - logger is for 'api' service
         #...
     
+
+    def set_headers(self, headers):
+        if headers:
+            self.session.headers.update(headers)
+
     def post(self, path, **kwargs):
         return self._send_request(method='POST', path=path, **kwargs)
     

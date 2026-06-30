@@ -20,6 +20,7 @@ class AccountApi(RestClient):
         
         return response
     
+    
     def put_v1_account_token(self, token):
         """
         Activate registered user
@@ -42,6 +43,7 @@ class AccountApi(RestClient):
         
         return response
     
+    
     def put_v1_account_email(self, json_data):
         """
         Change registered user email
@@ -59,3 +61,60 @@ class AccountApi(RestClient):
         )
 
         return response
+    
+    
+    def get_v1_account(self, **kwargs):
+        """
+        Get current user
+
+        Args:
+            **kwargs
+
+        Returns:
+            _type_: Response
+        """
+        
+        response = self.get(
+            path="/v1/account",
+            **kwargs
+        )
+        
+        return response
+    
+
+    def post_v1_account_password(self, json_data):
+        """
+        Reset registered user password
+
+        Args:
+            json_data
+
+        Returns:
+            _type_: Response
+        """
+        
+        response = self.post(
+            path="/v1/account/password",
+            json=json_data
+        )
+        
+        return response
+    
+
+    def put_v1_account_password(self, json_data):
+        """
+        Change registered user password
+
+        Args:
+            json_data
+
+        Returns:
+            _type_: Response
+        """
+        
+        response = self.put(
+            path="/v1/account/password",
+            json=json_data
+        )
+        
+        return response    
