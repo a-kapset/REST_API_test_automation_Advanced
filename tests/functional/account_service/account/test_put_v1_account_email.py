@@ -18,10 +18,10 @@ def test_put_v1_account_email(account_helper_fxt, user_data_fxt):
     password = user_data_fxt.password
     changed_email = user_data_fxt.updated_email
 
-    account_helper.create_new_user(login=login, password=password, email=email)
-    account_helper.register_a_user(login=login)
+    account_helper.register_new_user(login=login, password=password, email=email)
+    account_helper.activate_user(login=login)
     account_helper.user_login(login=login, password=password)
     account_helper.change_email(login=login, password=password, email=changed_email)
     account_helper.user_login(login=login, password=password, status_code=403)
-    account_helper.register_a_user(login=login)
+    account_helper.activate_user(login=login)
     account_helper.user_login(login=login, password=password)

@@ -38,7 +38,7 @@ class AccountHelper:
         self.mailhog_api = mailhog_api
     
     
-    def create_new_user(self, login: str, password: str, email: str, status_code: int = 201):
+    def register_new_user(self, login: str, password: str, email: str, status_code: int = 201):
                  
         json_data = {
             'login': login,
@@ -52,7 +52,7 @@ class AccountHelper:
         return resp_acc
     
     
-    def register_a_user(self, login: str):
+    def activate_user(self, login: str):
         
         token = self._get_activation_token_by_login(login=login)
         assert token is not None
