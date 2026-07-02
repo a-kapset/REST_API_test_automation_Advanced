@@ -72,10 +72,13 @@ class AccountHelper:
         return resp_acc_email
     
     
-    def user_login(self, login: str, password: str, remember_me: bool = True, status_code: int = 200, validate_response: bool = False):        
+    def user_login(self, login: str, password: str, remember_me: bool = True, status_code: int = 200, validate_response: bool = False, validate_headers: bool = False):
         login_credentials = LoginCredentials(login=login, password=password, remember_me=remember_me)        
         resp_acc_login = self.dm_account_api.login_api.post_v1_account_login(login_credentials=login_credentials, validate_response=validate_response)
-        assert resp_acc_login.status_code == status_code, f"Error occurred during logging in. Response: {resp_acc_login.json()}"
+        
+        if validate_headers:
+            assert resp_acc_login.headers['x-dm-auth-token'], 'Token has not been recieved'
+            assert resp_acc_login.status_code == status_code, f"Error occurred during logging in. Response: {resp_acc_login.json()}"
         
         return resp_acc_login
     
