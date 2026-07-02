@@ -53,7 +53,7 @@ class AccountHelper:
         token = self._get_activation_token_by_login(login=login)
         assert token is not None
         
-        resp_acc_token = self.dm_account_api.account_api.put_v1_account_token(token=token)
+        resp_acc_token = self.dm_account_api.account_api.put_v1_account_token(token=token, validate_response=False)
         assert resp_acc_token.status_code == 200, f"Error occurred during user activation. Response: {resp_acc_token.json()}"
         
         return resp_acc_token
@@ -67,7 +67,7 @@ class AccountHelper:
             'email': email
         }
         
-        resp_acc_email = self.dm_account_api.account_api.put_v1_account_email(json_data)
+        resp_acc_email = self.dm_account_api.account_api.put_v1_account_email(json_data, validate_response=False)
         assert resp_acc_email.status_code == 200, f"Error occurred during email updating. Response: {resp_acc_email.json()}"
         
         return resp_acc_email
@@ -75,7 +75,7 @@ class AccountHelper:
     
     def user_login(self, login: str, password: str, remember_me: bool = True, status_code: int = 200):        
         login_credentials = LoginCredentials(login=login, password=password, remember_me=remember_me)        
-        resp_acc_login = self.dm_account_api.login_api.post_v1_account_login(login_credentials=login_credentials)        
+        resp_acc_login = self.dm_account_api.login_api.post_v1_account_login(login_credentials=login_credentials, validate_response=False)
         assert resp_acc_login.status_code == status_code, f"Error occurred during logging in. Response: {resp_acc_login.json()}"
         
         return resp_acc_login
@@ -97,7 +97,7 @@ class AccountHelper:
             'email': email
         }
 
-        resp_pass_reset = self.dm_account_api.account_api.post_v1_account_password(reset_pass_data)
+        resp_pass_reset = self.dm_account_api.account_api.post_v1_account_password(reset_pass_data, validate_response=False)
         assert resp_pass_reset.status_code == 200, f"Error occurred during resetting user's password. Response: {resp_pass_reset.json()}"
 
         token = self._get_reset_password_token_by_login(login=login)
@@ -110,7 +110,7 @@ class AccountHelper:
             'newPassword': new_password
         }
 
-        resp_pass_change = self.dm_account_api.account_api.put_v1_account_password(change_pass_data)
+        resp_pass_change = self.dm_account_api.account_api.put_v1_account_password(change_pass_data, validate_response=False)
         assert resp_pass_change.status_code == 200, f"Error occurred during resetting user's password. Response: {resp_pass_change.json()}"
 
         return resp_pass_change

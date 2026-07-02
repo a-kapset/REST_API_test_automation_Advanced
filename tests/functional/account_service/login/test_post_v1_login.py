@@ -5,4 +5,4 @@ def test_post_v1_account_login(account_helper_fxt, user_data_fxt):
     
     account_helper_fxt.register_new_user(login=login, password=password, email=email) 
     account_helper_fxt.activate_user(login=login)
-    account_helper_fxt.user_login(login=login, password=password, rememberMe=True)
+    account_helper_fxt.user_login(login=login, password=password, remember_me=True)
