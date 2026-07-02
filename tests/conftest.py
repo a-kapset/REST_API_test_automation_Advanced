@@ -110,8 +110,8 @@ def account_helper_auth_new_fxt(mailhog_api_fxt, user_data_fxt):
     account_api_client = DmApiAccount(dm_api_configuration)
     account_helper = AccountHelper(dm_account_api=account_api_client, mailhog_api=mailhog_api_fxt)
     
-    account_helper.create_new_user(login=login, password=password, email=email)
-    account_helper.register_a_user(login=login)
+    account_helper.register_new_user(login=login, password=password, email=email)
+    account_helper.activate_user(login=login)
     account_helper.authenticate_client(login=login, password=password)
 
     # TODO: remove this user after tests?
