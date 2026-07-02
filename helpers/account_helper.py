@@ -88,7 +88,9 @@ class AccountHelper:
             kwargs['headers'] = {'x-dm-auth-token': token}
             
         resp_acc = self.dm_account_api.account_api.get_v1_account(validate_response=validate_response, **kwargs)
-        assert resp_acc.status_code == 200, f"Error occurred during getting user's info. Response: {resp_acc.json()}"
+        
+        if not validate_response:
+            assert resp_acc.status_code == 200, f"Error occurred during getting user's info. Response: {resp_acc.json()}"
 
         return resp_acc
     
