@@ -1,8 +1,11 @@
 import time
 from json import loads, JSONDecodeError
 from retrying import retry
+from dm_api_account.models.change_email import ChangeEmail
+from dm_api_account.models.change_password import ChangePassword
 from dm_api_account.models.login_credentials import LoginCredentials
 from dm_api_account.models.registration import Registration
+from dm_api_account.models.reset_password import ResetPassword
 from services.dm_api_account import DmApiAccount
 from services.api_mailhog import MailHogApi
 
@@ -60,14 +63,10 @@ class AccountHelper:
     
     
     def change_email(self, login: str, password: str, email: str):
-            
-        json_data = {
-            'login': login,        
-            'password': password,
-            'email': email
-        }
-        
-        resp_acc_email = self.dm_account_api.account_api.put_v1_account_email(json_data, validate_response=False)
+
+        change_email = ChangeEmail(login=login, password=password, email=email)
+
+        resp_acc_email = self.dm_account_api.account_api.put_v1_account_email(change_email, validate_response=False)
         assert resp_acc_email.status_code == 200, f"Error occurred during email updating. Response: {resp_acc_email.json()}"
         
         return resp_acc_email
@@ -85,32 +84,29 @@ class AccountHelper:
         if token:
             kwargs['headers'] = {'x-dm-auth-token': token}
             
-        resp_acc = self.dm_account_api.account_api.get_v1_account(**kwargs)
+        resp_acc = self.dm_account_api.account_api.get_v1_account(validate_response=False, **kwargs)
         assert resp_acc.status_code == 200, f"Error occurred during getting user's info. Response: {resp_acc.json()}"
 
         return resp_acc
     
     
     def change_password(self, login: str, email: str, old_password: str, new_password: str):
-        reset_pass_data  = {
-            'login': login,
-            'email': email
-        }
+        reset_password = ResetPassword(login=login, email=email)
 
-        resp_pass_reset = self.dm_account_api.account_api.post_v1_account_password(reset_pass_data, validate_response=False)
+        resp_pass_reset = self.dm_account_api.account_api.post_v1_account_password(reset_password, validate_response=False)
         assert resp_pass_reset.status_code == 200, f"Error occurred during resetting user's password. Response: {resp_pass_reset.json()}"
 
         token = self._get_reset_password_token_by_login(login=login)
         assert token is not None
 
-        change_pass_data  = {
-            'login': login,
-            'token': token,
-            'oldPassword': old_password,
-            'newPassword': new_password
-        }
+        change_password = ChangePassword(
+            login=login,
+            token=token,
+            old_password=old_password,
+            new_password=new_password
+        )
 
-        resp_pass_change = self.dm_account_api.account_api.put_v1_account_password(change_pass_data, validate_response=False)
+        resp_pass_change = self.dm_account_api.account_api.put_v1_account_password(change_password, validate_response=False)
         assert resp_pass_change.status_code == 200, f"Error occurred during resetting user's password. Response: {resp_pass_change.json()}"
 
         return resp_pass_change

@@ -10,7 +10,7 @@ class LoginApi(RestClient):
         Authenticate via credentials
 
         Args:
-            json_data
+            login_credentials
 
         Returns:
             _type_: Response
@@ -18,7 +18,7 @@ class LoginApi(RestClient):
 
         response = self.post(
             path="/v1/account/login",
-            json=login_credentials.model_dump(exclude=None, by_alias=True)
+            json=login_credentials.model_dump(exclude_none=True, by_alias=True)
         )
 
         # UserEnvelope is only the success (2xx) response shape per swagger;
