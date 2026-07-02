@@ -1,6 +1,8 @@
 import time
 from json import loads, JSONDecodeError
 from retrying import retry
+from dm_api_account.models.login_credentials import LoginCredentials
+from dm_api_account.models.registration import Registration
 from services.dm_api_account import DmApiAccount
 from services.api_mailhog import MailHogApi
 
@@ -38,15 +40,9 @@ class AccountHelper:
         self.mailhog_api = mailhog_api
     
     
-    def register_new_user(self, login: str, password: str, email: str, status_code: int = 201):
-                 
-        json_data = {
-            'login': login,
-            'email': email,
-            'password': password,
-        }       
-        
-        resp_acc = self.dm_account_api.account_api.post_v1_account(json_data=json_data)
+    def register_new_user(self, login: str, password: str, email: str, status_code: int = 201):                 
+        registration = Registration(login=login, password=password, email=email)        
+        resp_acc = self.dm_account_api.account_api.post_v1_account(registration=registration)
         assert resp_acc.status_code == status_code, f"Error occurred during user creation. Response: {resp_acc.json()}"
         
         return resp_acc
@@ -77,15 +73,9 @@ class AccountHelper:
         return resp_acc_email
     
     
-    def user_login(self, login: str, password: str, rememberMe: bool = True, status_code: int = 200):
-        
-        json_data = {
-            'login': login,        
-            'password': password,
-            'rememberMe': rememberMe
-        }
-        
-        resp_acc_login = self.dm_account_api.login_api.post_v1_account_login(json_data)        
+    def user_login(self, login: str, password: str, remember_me: bool = True, status_code: int = 200):        
+        login_credentials = LoginCredentials(login=login, password=password, remember_me=remember_me)        
+        resp_acc_login = self.dm_account_api.login_api.post_v1_account_login(login_credentials=login_credentials)        
         assert resp_acc_login.status_code == status_code, f"Error occurred during logging in. Response: {resp_acc_login.json()}"
         
         return resp_acc_login
