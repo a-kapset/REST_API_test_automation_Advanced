@@ -18,5 +18,8 @@ def check_status_code_http(
             raise AssertionError(f"Message '{expected_message}' should be recieved")
         
     except HTTPError as err:
-        assert err.response.status_code == expected_status_code
-        assert err.response.json()['title'] == expected_message
+        assert err.response.status_code == expected_status_code, \
+            f"Expected status code is {expected_status_code}, but actual is {err.response.status_code}"
+            
+        assert err.response.json()['title'] == expected_message, \
+            f"Expected message is '{expected_message}', but actual is '{err.response.json()['title']}'"
