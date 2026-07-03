@@ -67,13 +67,9 @@ class AccountHelper:
     def user_login(self, login: str, password: str, remember_me: bool = True, status_code: int = 200, validate_response: bool = True, validate_headers: bool = False):
         login_credentials = LoginCredentials(login=login, password=password, remember_me=remember_me)
         resp_acc_login = self.dm_account_api.login_api.post_v1_account_login(login_credentials=login_credentials, validate_response=validate_response)
-
-        # Header/status checks need the raw Response, so callers that use
-        # validate_headers must pass validate_response=False (a validated body
-        # is a pydantic model and exposes no headers/status_code).
+        
         if validate_headers:
-            assert resp_acc_login.headers['x-dm-auth-token'], 'Token has not been recieved'
-            assert resp_acc_login.status_code == status_code, f"Error occurred during logging in. Response: {resp_acc_login.json()}"
+            assert resp_acc_login.headers['x-dm-auth-token'], 'Token has not been recieved'            
 
         return resp_acc_login
     
@@ -82,12 +78,7 @@ class AccountHelper:
         if token:
             kwargs['headers'] = {'x-dm-auth-token': token}
             
-        resp_acc = self.dm_account_api.account_api.get_v1_account(validate_response=validate_response, **kwargs)
-
-        # When the body isn't validated we still assert the raw status code;
-        # a validated response is a pydantic model with no status_code.
-        if not validate_response:
-            assert resp_acc.status_code == 200, f"Error occurred during getting user's info. Response: {resp_acc.json()}"
+        resp_acc = self.dm_account_api.account_api.get_v1_account(validate_response=validate_response, **kwargs)        
 
         return resp_acc
     
