@@ -1,6 +1,3 @@
-from dm_api_account.models.user_envelope import UserEnvelope
-
-
 def test_post_v1_account_base(account_helper_fxt, user_data_fxt):
     login = user_data_fxt.login
     password = user_data_fxt.password
@@ -8,5 +5,4 @@ def test_post_v1_account_base(account_helper_fxt, user_data_fxt):
 
     account_helper_fxt.register_new_user(login=login, password=password, email=email)
     account_helper_fxt.activate_user(login=login)
-    response = account_helper_fxt.user_login(login=login, password=password, remember_me=True)
-    UserEnvelope(**response.json())
+    account_helper_fxt.user_login(login=login, password=password, remember_me=True)

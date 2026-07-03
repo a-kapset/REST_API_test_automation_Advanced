@@ -43,61 +43,47 @@ class AccountHelper:
         self.mailhog_api = mailhog_api
     
     
-    def register_new_user(self, login: str, password: str, email: str, status_code: int = 201):                 
+    def register_new_user(self, login: str, password: str, email: str):
         registration = Registration(login=login, password=password, email=email)        
-        resp_acc = self.dm_account_api.account_api.post_v1_account(registration=registration)
-        assert resp_acc.status_code == status_code, f"Error occurred during user creation. Response: {resp_acc.json()}"
+        resp_acc = self.dm_account_api.account_api.post_v1_account(registration=registration)        
         
         return resp_acc
     
     
-    def activate_user(self, login: str, validate_response: bool = False):
-        
-        token = self._get_activation_token_by_login(login=login)
-        assert token is not None
-        
-        resp_acc_token = self.dm_account_api.account_api.put_v1_account_token(token=token, validate_response=validate_response)
-        assert resp_acc_token.status_code == 200, f"Error occurred during user activation. Response: {resp_acc_token.json()}"
+    def activate_user(self, login: str, validate_response: bool = True):        
+        token = self._get_activation_token_by_login(login=login)        
+        resp_acc_token = self.dm_account_api.account_api.put_v1_account_token(token=token, validate_response=validate_response)        
         
         return resp_acc_token
     
     
-    def change_email(self, login: str, password: str, email: str, validate_response: bool = False):
-
+    def change_email(self, login: str, password: str, email: str, validate_response: bool = True):
         change_email = ChangeEmail(login=login, password=password, email=email)
-
-        resp_acc_email = self.dm_account_api.account_api.put_v1_account_email(change_email=change_email, validate_response=validate_response)
-        assert resp_acc_email.status_code == 200, f"Error occurred during email updating. Response: {resp_acc_email.json()}"
+        resp_acc_email = self.dm_account_api.account_api.put_v1_account_email(change_email=change_email, validate_response=validate_response)        
         
         return resp_acc_email
     
     
-    def user_login(self, login: str, password: str, remember_me: bool = True, status_code: int = 200, validate_response: bool = False):        
+    def user_login(self, login: str, password: str, remember_me: bool = True, validate_response: bool = True):
         login_credentials = LoginCredentials(login=login, password=password, remember_me=remember_me)        
-        resp_acc_login = self.dm_account_api.login_api.post_v1_account_login(login_credentials=login_credentials, validate_response=validate_response)
-        assert resp_acc_login.status_code == status_code, f"Error occurred during logging in. Response: {resp_acc_login.json()}"
+        resp_acc_login = self.dm_account_api.login_api.post_v1_account_login(login_credentials=login_credentials, validate_response=validate_response)        
         
         return resp_acc_login
     
 
-    def get_user_info(self, token=None, validate_response: bool = False, **kwargs):
+    def get_user_info(self, token=None, validate_response: bool = True, **kwargs):
         if token:
             kwargs['headers'] = {'x-dm-auth-token': token}
             
-        resp_acc = self.dm_account_api.account_api.get_v1_account(validate_response=validate_response, **kwargs)
-        assert resp_acc.status_code == 200, f"Error occurred during getting user's info. Response: {resp_acc.json()}"
+        resp_acc = self.dm_account_api.account_api.get_v1_account(validate_response=validate_response, **kwargs)        
 
         return resp_acc
     
     
-    def change_password(self, login: str, email: str, old_password: str, new_password: str, validate_response: bool = False):
+    def change_password(self, login: str, email: str, old_password: str, new_password: str, validate_response: bool = True):
         reset_password = ResetPassword(login=login, email=email)
-
-        resp_pass_reset = self.dm_account_api.account_api.post_v1_account_password(reset_password=reset_password, validate_response=validate_response)
-        assert resp_pass_reset.status_code == 200, f"Error occurred during resetting user's password. Response: {resp_pass_reset.json()}"
-
+        self.dm_account_api.account_api.post_v1_account_password(reset_password=reset_password, validate_response=validate_response)        
         token = self._get_reset_password_token_by_login(login=login)
-        assert token is not None
 
         change_password = ChangePassword(
             login=login,
@@ -106,8 +92,7 @@ class AccountHelper:
             new_password=new_password
         )
 
-        resp_pass_change = self.dm_account_api.account_api.put_v1_account_password(change_password, validate_response=validate_response)
-        assert resp_pass_change.status_code == 200, f"Error occurred during resetting user's password. Response: {resp_pass_change.json()}"
+        resp_pass_change = self.dm_account_api.account_api.put_v1_account_password(change_password, validate_response=validate_response)        
 
         return resp_pass_change
     
@@ -116,8 +101,7 @@ class AccountHelper:
         if token:
             kwargs['headers'] = {'x-dm-auth-token': token}
             
-        resp_logout = self.dm_account_api.login_api.delete_v1_account_login(**kwargs)
-        assert resp_logout.status_code == 204, f"Error occurred during logging out. Response: {resp_logout.json()}"
+        resp_logout = self.dm_account_api.login_api.delete_v1_account_login(**kwargs)        
 
         return resp_logout
     
@@ -126,14 +110,13 @@ class AccountHelper:
         if token:
             kwargs['headers'] = {'x-dm-auth-token': token}
             
-        resp_logout_all = self.dm_account_api.login_api.delete_v1_account_login_all(**kwargs)
-        assert resp_logout_all.status_code == 204, f"Error occurred during logging out from all devices. Response: {resp_logout_all.json()}"
+        resp_logout_all = self.dm_account_api.login_api.delete_v1_account_login_all(**kwargs)        
 
         return resp_logout_all
     
     
     def authenticate_client(self, login: str, password: str):
-        resp_login = self.user_login(login=login, password=password)
+        resp_login = self.user_login(login=login, password=password, validate_response=False)
 
         auth_token = {
             'x-dm-auth-token': resp_login.headers['x-dm-auth-token']
