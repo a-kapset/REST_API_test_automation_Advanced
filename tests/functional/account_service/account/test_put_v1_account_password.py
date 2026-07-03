@@ -11,8 +11,10 @@ def test_put_v1_account_password(
         old_password=user_data.password,
         new_password=user_data.new_password
     )
+    
 
     account_api.user_login(
         login=user_data.login,
         password=user_data.new_password
     )
+    
