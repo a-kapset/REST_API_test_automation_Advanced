@@ -11,11 +11,16 @@ from hamcrest import (
 )
 from dm_api_account.models.user_envelope import UserRole
 from checkers.http_checkers import check_status_code_http
+from assertpy import soft_assertions, assert_that
 
 
 def test_get_v1_account_authenticated(account_helper_auth_existing_fxt):
-    with check_status_code_http():
-        account_helper_auth_existing_fxt.get_user_info()
+    response = account_helper_auth_existing_fxt.get_user_info()
+    
+    with soft_assertions():
+        assert_that(response.resource.login).is_equal_to('ab1782550dsd132')
+        assert_that(response.resource.online).is_instance_of(datetime)
+        assert_that(response.resource.roles).contains(UserRole.GUEST, UserRole.PLAYER)
 
 
 def test_get_v1_account_not_authenticated(account_helper_fxt):
@@ -27,7 +32,7 @@ def test_get_v1_account_check_properties(account_helper_auth_existing_fxt):
     response = account_helper_auth_existing_fxt.get_user_info(validate_response=True)
 
     assert_that(
-        response, all_of(            
+        response, all_of(
             has_property('resource', not_none()),
             has_property('resource', has_property('login', equal_to('ab1782550dsd132'))),
             has_property('resource', has_property('roles', has_item(equal_to(UserRole.PLAYER)))),            
