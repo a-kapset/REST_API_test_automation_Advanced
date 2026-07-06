@@ -51,6 +51,10 @@ coverage.xml
 # mypy
 .mypy_cache/
 
+# Allure
+allure-results/
+allure-report/
+
 # Logs
 *.log
 
