@@ -65,10 +65,14 @@ jobs:
     steps:
       - name: Download site report
         uses: actions/download-artifact@v4
+        with:
+          name: _site
+          path: _site
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
-      - run: allure open -c allure-results
+        with:
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
