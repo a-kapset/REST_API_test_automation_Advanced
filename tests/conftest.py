@@ -2,6 +2,8 @@ import time
 import pytest
 import structlog
 from collections import namedtuple
+from pathlib import Path
+from vyper import v
 from helpers.account_helper import AccountHelper
 from restclient.configuration import Configuration
 from services.dm_api_account import DmApiAccount
@@ -14,11 +16,55 @@ structlog.configure(
 )
 
 
+options = (
+    'service.dm_api_account',
+    'service.mailhog',
+    'user.login',
+    'user.password',
+    'user.new_password'
+)
+
+
+@pytest.fixture(scope='session', autouse=True)
+def set_config(request):
+    """
+    Loads config for the environment given by --env and layers CLI overrides.
+
+    Reads the matching config file from the config/ directory into Vyper, then
+    overrides each option with its --<option> command-line value when provided.
+    Session-scoped and autouse, so it runs once before any test.
+    """
+
+    config = Path(__file__).joinpath('../../').joinpath('config')
+    config_name = request.config.getoption('--env')
+    v.set_config_name(config_name)
+    v.add_config_path(config)
+    v.read_in_config()
+    
+    for option in options:
+        v.set(f"{option}", request.config.getoption(f"--{option}"))
+    
+
+def pytest_addoption(parser):
+    """
+    Registers custom pytest CLI options.
+
+    Adds --env to pick the config environment (default 'stg') plus one
+    --<option> for each entry in `options`, allowing config values to be
+    overridden from the command line.
+    """
+
+    parser.addoption('--env', action='store', default='stg', help='run stg')
+    
+    for option in options:
+        parser.addoption(f"--{option}", action='store', default=None)
+
+
 @pytest.fixture(scope='session')
 def mailhog_api_fxt():
     """Session-scoped MailHog API client, used to read activation emails."""
     
-    mailhog_api_configuration = Configuration(host='http://185.185.143.231:5025', disable_log=True)
+    mailhog_api_configuration = Configuration(host=v.get('service.mailhog'), disable_log=True)
     mailhog_client = MailHogApi(mailhog_api_configuration)
 
     return mailhog_client
@@ -28,7 +74,7 @@ def mailhog_api_fxt():
 def dm_account_api_fxt():
     """Returns a low-level DmApiAccount client for the account service API."""
     
-    dm_api_configuration = Configuration(host='http://185.185.143.231:5051', disable_log=False)
+    dm_api_configuration = Configuration(host=v.get('service.dm_api_account'), disable_log=False)
     account_client = DmApiAccount(dm_api_configuration)
 
     return account_client
@@ -78,13 +124,10 @@ def account_helper_auth_existing_fxt(mailhog_api_fxt):
     doesn't care about the specific account.
     """
 
-    dm_api_configuration = Configuration(host='http://185.185.143.231:5051', disable_log=False)
+    dm_api_configuration = Configuration(host=v.get('service.dm_api_account'), disable_log=False)
     account_api_client = DmApiAccount(dm_api_configuration)
     account_helper = AccountHelper(dm_account_api=account_api_client, mailhog_api=mailhog_api_fxt)
-
-    # TODO: replace hardcoded values with more flexible logic,
-    # or remove this fixture since there is account_helper_auth_new_fxt
-    account_helper.authenticate_client(login="ab1782550dsd132", password='qwerty123')
+    account_helper.authenticate_client(login=v.get('user.login'), password=v.get('user.password'))
 
     return account_helper
 
@@ -106,7 +149,7 @@ def account_helper_auth_new_fxt(mailhog_api_fxt, user_data_fxt):
     password = user_data_fxt.password
     email = user_data_fxt.email
     
-    dm_api_configuration = Configuration(host='http://185.185.143.231:5051', disable_log=False)
+    dm_api_configuration = Configuration(host=v.get('service.dm_api_account'), disable_log=False)
     account_api_client = DmApiAccount(dm_api_configuration)
     account_helper = AccountHelper(dm_account_api=account_api_client, mailhog_api=mailhog_api_fxt)
     
@@ -123,8 +166,8 @@ def _get_user_data():
     login = f'ab{int(time.time_ns())}'
     email = f"{login}@test.com"
     updated_email = f"upd_{login}@test.com"
-    password = 'qwerty123'
-    new_password = 'qwerty456'
+    password = v.get('user.password')
+    new_password = v.get('user.new_password')
 
     User = namedtuple(
         'User',
