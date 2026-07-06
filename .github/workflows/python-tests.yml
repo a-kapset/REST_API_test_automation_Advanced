@@ -77,3 +77,6 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Output report link
+        run: echo "https://a-kapset.github.io/REST_API_test_automation_Advanced/"
