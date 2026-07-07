@@ -15,6 +15,13 @@ class TestsPostV1Account_BaseTest:
         account_helper_fxt.register_new_user(login=login, password=password, email=email)
         account_helper_fxt.activate_user(login=login)
         response = account_helper_fxt.user_login(login=login, password=password, remember_me=True, validate_response=True)
-        PostV1AccountChecker.check_response_values(response)
+        
+        PostV1AccountChecker.check_response_values(
+            response=response,
+            login_starts_with='ab',
+            rating_is_enabled=True,
+            rating_quality=0,
+            rating_quantity=0
+        )
     
     

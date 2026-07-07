@@ -1,5 +1,5 @@
-from datetime import datetime
 import allure
+from datetime import datetime
 from hamcrest import (
     assert_that,
     all_of,
@@ -14,7 +14,7 @@ from dm_api_account.models.user_envelope import UserRole
 from assertpy import soft_assertions, assert_that
 
 
-class GetV1AccountChecker():
+class GetV1AccountChecker:
 
     @classmethod
     def check_response_values(cls, response, **kwargs):
