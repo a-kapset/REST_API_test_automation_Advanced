@@ -1,0 +1,18 @@
+FROM python:latest
+
+# swagger-coverage's report generator is a Java CLI, so a JRE is required
+# for reporter.generate_report() to produce the HTML report.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends default-jre-headless \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY . .
+
+RUN pip3 install -r requirements.txt
+
+# Run the suite with swagger coverage enabled. On Linux the ":" in the
+# host:port output directory is valid (unlike Windows), so the report is
+# produced successfully.
+CMD ["pytest", "tests", "--swagger-coverage"]
