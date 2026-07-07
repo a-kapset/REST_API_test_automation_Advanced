@@ -1,0 +1,8 @@
+service:
+  dm_api_account: 'http://185.185.143.231:5051'
+  mailhog: 'http://185.185.143.231:5025'
+
+user:
+  login: 'ab1782550dsd132'
+  password: 'qwerty123'
+  new_password: 'qwerty456'
