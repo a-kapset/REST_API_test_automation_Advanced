@@ -5,6 +5,7 @@ import structlog
 from collections import namedtuple
 from pathlib import Path
 from vyper import v
+from dotenv import load_dotenv
 from swagger_coverage_py.reporter import CoverageReporter
 from helpers.account_helper import AccountHelper
 from restclient.configuration import Configuration
@@ -23,7 +24,7 @@ options = (
     'service.mailhog',
     'user.login',
     'user.password',
-    'user.new_password'
+    'user.new_password',
 )
 
 
@@ -44,7 +45,11 @@ def set_config(request):
     v.read_in_config()
     
     for option in options:
-        v.set(f"{option}", request.config.getoption(f"--{option}"))
+        v.set(f"{option}", request.config.getoption(f"--{option}"))    
+    
+    load_dotenv() # loads Telegram secret credentials
+    request.config.stash['telegram-notifier-addfields']['environment'] = config_name
+    request.config.stash['telegram-notifier-addfields']['report'] = 'https://a-kapset.github.io/REST_API_test_automation_Advanced/'
     
 
 def pytest_addoption(parser):
@@ -79,9 +84,7 @@ def pytest_configure(config):
     is early enough.
     """
 
-    os.environ['SWAGGER_COVERAGE_ENABLED'] = (
-        '1' if config.getoption('--swagger-coverage') else '0'
-    )
+    os.environ['SWAGGER_COVERAGE_ENABLED'] = '1' if config.getoption('--swagger-coverage') else '0'
 
 
 @pytest.fixture(scope="session", autouse=True)
