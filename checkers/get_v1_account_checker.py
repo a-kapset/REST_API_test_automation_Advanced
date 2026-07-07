@@ -1,4 +1,5 @@
 from datetime import datetime
+import allure
 from hamcrest import (
     assert_that,
     all_of,
@@ -17,23 +18,25 @@ class GetV1AccountChecker():
 
     @classmethod
     def check_response_values(cls, response, **kwargs):
-        assert_that(
-            response, all_of(
-                has_property('resource', not_none()),
-                has_property('resource', has_property('login', equal_to(kwargs['login']))),
-                has_property('resource', has_property('roles', has_item(equal_to(UserRole.PLAYER)))),            
-                has_property('resource', has_property('registration', instance_of(datetime))),            
-                has_property('resource', has_property('rating', has_properties({
-                    'enabled': instance_of(bool),
-                    'quality': instance_of(int),
-                    'quantity': instance_of(int),
-                }))),
+        with allure.step("Check response values"):
+            assert_that(
+                response, all_of(
+                    has_property('resource', not_none()),
+                    has_property('resource', has_property('login', equal_to(kwargs['login']))),
+                    has_property('resource', has_property('roles', has_item(equal_to(UserRole.PLAYER)))),            
+                    has_property('resource', has_property('registration', instance_of(datetime))),            
+                    has_property('resource', has_property('rating', has_properties({
+                        'enabled': instance_of(bool),
+                        'quality': instance_of(int),
+                        'quantity': instance_of(int),
+                    }))),
+                )
             )
-        )
     
     @classmethod
     def check_response_values_softly(cls, response, **kwargs):
-        with soft_assertions():
-            assert_that(response.resource.login).is_equal_to(kwargs['login'])
-            assert_that(response.resource.online).is_instance_of(datetime)
-            assert_that(response.resource.roles).contains(UserRole.GUEST, UserRole.PLAYER)
+        with allure.step("Check response values softly"):
+            with soft_assertions():
+                assert_that(response.resource.login).is_equal_to(kwargs['login'])
+                assert_that(response.resource.online).is_instance_of(datetime)
+                assert_that(response.resource.roles).contains(UserRole.GUEST, UserRole.PLAYER)

@@ -1,4 +1,5 @@
 import time
+import allure
 from json import loads, JSONDecodeError
 from retrying import retry
 from dm_api_account.models.change_email import ChangeEmail
@@ -42,28 +43,28 @@ class AccountHelper:
         self.dm_account_api = dm_account_api
         self.mailhog_api = mailhog_api
     
-    
+    @allure.step("New user registration")
     def register_new_user(self, login: str, password: str, email: str):
         registration = Registration(login=login, password=password, email=email)        
         resp_acc = self.dm_account_api.account_api.post_v1_account(registration=registration)        
         
         return resp_acc
     
-    
+    @allure.step("Activate user's account")
     def activate_user(self, login: str, validate_response: bool = True):        
         token = self._get_activation_token_by_login(login=login)        
         resp_acc_token = self.dm_account_api.account_api.put_v1_account_token(token=token, validate_response=validate_response)        
         
         return resp_acc_token
     
-    
+    @allure.step("Change email address")
     def change_email(self, login: str, password: str, email: str, validate_response: bool = True):
         change_email = ChangeEmail(login=login, password=password, email=email)
         resp_acc_email = self.dm_account_api.account_api.put_v1_account_email(change_email=change_email, validate_response=validate_response)        
         
         return resp_acc_email
     
-    
+    @allure.step("User login")
     def user_login(self, login: str, password: str, remember_me: bool = True, status_code: int = 200, validate_response: bool = True, validate_headers: bool = False):
         login_credentials = LoginCredentials(login=login, password=password, remember_me=remember_me)
         resp_acc_login = self.dm_account_api.login_api.post_v1_account_login(login_credentials=login_credentials, validate_response=validate_response)
@@ -73,7 +74,7 @@ class AccountHelper:
 
         return resp_acc_login
     
-
+    @allure.step("Get user's account info")
     def get_user_info(self, token=None, validate_response: bool = True, **kwargs):
         if token:
             kwargs['headers'] = {'x-dm-auth-token': token}
@@ -83,6 +84,7 @@ class AccountHelper:
         return resp_acc
     
     
+    @allure.step("Get user's password")
     def change_password(self, login: str, email: str, old_password: str, new_password: str, validate_response: bool = True):
         reset_password = ResetPassword(login=login, email=email)
         self.dm_account_api.account_api.post_v1_account_password(reset_password=reset_password, validate_response=validate_response)        
@@ -99,7 +101,7 @@ class AccountHelper:
 
         return resp_pass_change
     
-
+    @allure.step("User logout")
     def user_logout(self, token=None, **kwargs):
         if token:
             kwargs['headers'] = {'x-dm-auth-token': token}
@@ -108,7 +110,7 @@ class AccountHelper:
 
         return resp_logout
     
-
+    @allure.step("User logout from all devices")
     def user_logout_all(self, token=None, **kwargs):
         if token:
             kwargs['headers'] = {'x-dm-auth-token': token}
@@ -117,7 +119,7 @@ class AccountHelper:
 
         return resp_logout_all
     
-    
+    @allure.step("Authenticate client")
     def authenticate_client(self, login: str, password: str):
         resp_login = self.user_login(login=login, password=password, validate_response=False)
 
@@ -140,7 +142,7 @@ class AccountHelper:
         # Password-reset emails carry the link under 'ConfirmationLinkUri'.
         return self._get_token_by_login(login=login, link_field='ConfirmationLinkUri')
 
-
+    @allure.step("Get activation token from email")
     def _get_token_by_login(self, login, link_field):
         resp_get_messages = self.mailhog_api.mailhog_api.get_api_v2_messages()
         
