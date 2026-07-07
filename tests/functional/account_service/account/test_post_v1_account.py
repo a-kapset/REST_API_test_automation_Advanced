@@ -8,31 +8,7 @@ def test_post_v1_account(account_helper_fxt, user_data_fxt):
             password=user_data_fxt.password,
             email=user_data_fxt.email
         )
-    
 
-# def test_post_v1_account_invalid_password(account_helper_fxt, user_data_fxt):
-#     with check_status_code_http(expected_status_code=400, expected_message='Validation failed'):
-#         account_helper_fxt.register_new_user(
-#             login=user_data_fxt.login,
-#             password=user_data_fxt.password[0:5],
-#             email=user_data_fxt.email
-#         )
-
-# def test_post_v1_account_invalid_email(account_helper_fxt, user_data_fxt):
-#     with check_status_code_http(expected_status_code=400, expected_message='Validation failed'):
-#         account_helper_fxt.register_new_user(
-#             login=user_data_fxt.login,
-#             password=user_data_fxt.password,
-#             email=user_data_fxt.email.replace('@', '#')
-#         )
-
-# def test_post_v1_account_invalid_login(account_helper_fxt, user_data_fxt):
-#     with check_status_code_http(expected_status_code=400, expected_message='Validation failed'):
-#         account_helper_fxt.register_new_user(
-#             login=user_data_fxt.login[0:1],
-#             password=user_data_fxt.password,
-#             email=user_data_fxt.email
-#         )
 
 @pytest.mark.parametrize(
     ('field', 'transformer'),
