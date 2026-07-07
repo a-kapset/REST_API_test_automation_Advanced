@@ -1,9 +1,11 @@
+import os
 import time
 import pytest
 import structlog
 from collections import namedtuple
 from pathlib import Path
 from vyper import v
+from swagger_coverage_py.reporter import CoverageReporter
 from helpers.account_helper import AccountHelper
 from restclient.configuration import Configuration
 from services.dm_api_account import DmApiAccount
@@ -55,9 +57,52 @@ def pytest_addoption(parser):
     """
 
     parser.addoption('--env', action='store', default='stg', help='run stg')
-    
+
+    parser.addoption(
+        '--swagger-coverage',
+        action='store_true',
+        default=False,
+        help='Collect requests and generate a swagger coverage report. '
+             'Requires a Java runtime and a filesystem that allows ":" in '
+             'paths (i.e. run in Docker via Dockerfile-sw-coverage, not on Windows).'
+    )
+
     for option in options:
         parser.addoption(f"--{option}", action='store', default=None)
+
+
+def pytest_configure(config):
+    """
+    Exposes the --swagger-coverage flag to the RestClient via an env var so it
+    only records requests (which creates the swagger-coverage-output directory)
+    when the report is actually wanted. Read at request time, so setting it here
+    is early enough.
+    """
+
+    os.environ['SWAGGER_COVERAGE_ENABLED'] = (
+        '1' if config.getoption('--swagger-coverage') else '0'
+    )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_swagger_coverage(request):
+    """
+    Session-scoped swagger coverage reporter, enabled only with --swagger-coverage.
+
+    When the flag is absent (the default), this fixture is a no-op so tests run
+    anywhere, including Windows. When enabled, it sets up the reporter before the
+    session and generates the HTML report afterwards.
+    """
+
+    if not request.config.getoption('--swagger-coverage'):
+        yield
+        return
+
+    reporter = CoverageReporter(api_name="dm-api-reporter", host="http://185.185.143.231:5051")
+    reporter.cleanup_input_files()
+    reporter.setup("/swagger/Account/swagger.json")
+    yield
+    reporter.generate_report()
 
 
 @pytest.fixture(scope='session')

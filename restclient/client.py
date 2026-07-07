@@ -1,7 +1,9 @@
+import os
 import structlog
 import uuid
 import curlify
 from requests import JSONDecodeError, session
+from swagger_coverage_py.listener import URI, RequestSchemaHandler
 from restclient.configuration import Configuration
 from restclient.utilities import allure_attach
 
@@ -58,6 +60,14 @@ class RestClient:
         rest_response = self.session.request(method=method, url=full_url, **kwargs)
         curl = curlify.to_curl(rest_response.request) # Creates "curl" for performed request
         print(curl)
+        
+        # Record the request for swagger coverage only when enabled via the
+        # --swagger-coverage flag (see conftest.pytest_configure). Recording
+        # creates a swagger-coverage-output/<host:port>/ directory, which fails
+        # on Windows because ":" is illegal in paths — so keep it off by default.
+        if os.environ.get('SWAGGER_COVERAGE_ENABLED') == '1':
+            uri = URI(host=self.host, base_path="", unformatted_path=path, uri_params=kwargs.get('params'))
+            RequestSchemaHandler(uri, method.lower(), rest_response, kwargs).write_schema()
         
         log.msg(
             event="Response",
