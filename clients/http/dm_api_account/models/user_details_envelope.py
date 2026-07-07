@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, List, Optional
 from pydantic import BaseModel, Field, ConfigDict, field_validator
-from dm_api_account.models.user_envelope import Rating, UserRole
+from clients.http.dm_api_account.models.user_envelope import Rating, UserRole
 
 
 class BbParseMode(str, Enum):

@@ -10,7 +10,7 @@ from hamcrest import (
     equal_to,
     not_none,
 )
-from dm_api_account.models.user_envelope import UserRole
+from clients.http.dm_api_account.models.user_envelope import UserRole
 from assertpy import soft_assertions, assert_that
 
 

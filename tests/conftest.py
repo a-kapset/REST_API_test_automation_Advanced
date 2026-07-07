@@ -8,7 +8,7 @@ from vyper import v
 from dotenv import load_dotenv
 from swagger_coverage_py.reporter import CoverageReporter
 from helpers.account_helper import AccountHelper
-from restclient.configuration import Configuration
+from packages.restclient.configuration import Configuration
 from services.dm_api_account import DmApiAccount
 from services.api_mailhog import MailHogApi
 
