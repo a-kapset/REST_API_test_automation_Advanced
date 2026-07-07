@@ -10,9 +10,20 @@ from hamcrest import (
     not_none,
 )
 from dm_api_account.models.user_envelope import UserRole
+from checkers.http_checkers import check_status_code_http
 
 
-def test_get_v1_account(account_helper_auth_existing_fxt):
+def test_get_v1_account_authenticated(account_helper_auth_existing_fxt):
+    with check_status_code_http():
+        account_helper_auth_existing_fxt.get_user_info()
+
+
+def test_get_v1_account_not_authenticated(account_helper_fxt):
+    with check_status_code_http(expected_status_code=401, expected_message='User must be authenticated'):
+        account_helper_fxt.get_user_info()
+
+
+def test_get_v1_account_check_properties(account_helper_auth_existing_fxt):
     response = account_helper_auth_existing_fxt.get_user_info(validate_response=True)
 
     assert_that(

@@ -39,6 +39,8 @@ class RestClient:
 
         if self.disable_log:
             rest_response = self.session.request(method=method, url=full_url, **kwargs)
+            rest_response.raise_for_status() # Raises HTTPError, if one occurred (status != 2xx)
+            
             return rest_response          
         
         log.msg(
@@ -52,9 +54,7 @@ class RestClient:
         )
         
         rest_response = self.session.request(method=method, url=full_url, **kwargs)
-        
-        # creates "curl" for performed request
-        curl = curlify.to_curl(rest_response.request)
+        curl = curlify.to_curl(rest_response.request) # Creates "curl" for performed request
         print(curl)
         
         log.msg(
@@ -63,6 +63,8 @@ class RestClient:
             headers=rest_response.headers,
             json=self._get_json(rest_response)
         )
+        
+        rest_response.raise_for_status() # Raises HTTPError, if one occurred (status != 2xx)
         
         return rest_response
     

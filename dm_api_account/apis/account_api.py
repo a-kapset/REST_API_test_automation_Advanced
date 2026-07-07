@@ -1,5 +1,6 @@
 from dm_api_account.models.change_email import ChangeEmail
 from dm_api_account.models.change_password import ChangePassword
+from dm_api_account.models.problem_details import ProblemDetails
 from dm_api_account.models.registration import Registration
 from dm_api_account.models.reset_password import ResetPassword
 from dm_api_account.models.user_details_envelope import UserDetailsEnvelope
@@ -91,8 +92,16 @@ class AccountApi(RestClient):
             **kwargs
         )
 
+        # Validate against the model that matches the returned status code so
+        # error responses are validated too (not just 2xx). 401 uses
+        # ProblemDetails because that is the body the server actually returns
+        # for an unauthenticated request, even though swagger only declares
+        # the 200 -> UserDetailsEnvelope response.
         if validate_response:
-            return UserDetailsEnvelope(**response.json())
+            if response.status_code == 200:
+                return UserDetailsEnvelope(**response.json())
+            if response.status_code == 401:
+                return ProblemDetails(**response.json())
 
         return response
 
