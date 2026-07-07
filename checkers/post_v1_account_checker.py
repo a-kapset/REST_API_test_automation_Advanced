@@ -11,24 +11,24 @@ from hamcrest import (
 )
 
 
-class PostV1AccountChecker():
+class PostV1AccountChecker:
 
     @classmethod    
-    def check_response_values(cls, response):
+    def check_response_values(cls, response, **kwargs):
         with allure.step("Check response values"):
             today = datetime.now().strftime('%Y-%m-%d')            
             assert_that(str(response.resource.registration), starts_with(today))
 
             assert_that(
                 response, all_of(
-                    has_property('resource', has_property('login', starts_with('ab'))),
+                    has_property('resource', has_property('login', starts_with(kwargs['login_starts_with']))),
                     has_property('resource', has_property('registration', instance_of(datetime))),
                     has_property('resource', has_properties({
                                 'rating': has_properties(
                                     {
-                                        'enabled': equal_to(True),
-                                        'quality': equal_to(0),
-                                        'quantity': equal_to(0)
+                                        'enabled': equal_to(kwargs['rating_is_enabled']),
+                                        'quality': equal_to(kwargs['rating_quality']),
+                                        'quantity': equal_to(kwargs['rating_quantity'])
                                     }
                                 )
                             }

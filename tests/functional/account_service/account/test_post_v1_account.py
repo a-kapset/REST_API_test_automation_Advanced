@@ -24,6 +24,8 @@ class TestsPostV1AccountNegative:
     @allure.title('Register a new user with invalid credentials')
     @pytest.mark.parametrize(
         ('field', 'transformer'),
+        
+        # TODO: consider to simplify parameters without lambdas to improve test readability
         [
             pytest.param('login', lambda v: v[0:1], id='invalid_login'),
             pytest.param('email', lambda v: v.replace('@', '#'), id='invalid_email'),
