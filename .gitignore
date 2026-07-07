@@ -66,3 +66,6 @@ Thumbs.db
 swagger-coverage-output/
 swagger-*.html
 swagger-doc-dm-api-reporter.json
+
+# tg bot
+tg_bot_creds.txt

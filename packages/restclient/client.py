@@ -4,8 +4,8 @@ import uuid
 import curlify
 from requests import JSONDecodeError, session
 from swagger_coverage_py.listener import URI, RequestSchemaHandler
-from restclient.configuration import Configuration
-from restclient.utilities import allure_attach
+from packages.restclient.configuration import Configuration
+from packages.restclient.utilities import allure_attach
 
 # Proxy implementation
 
