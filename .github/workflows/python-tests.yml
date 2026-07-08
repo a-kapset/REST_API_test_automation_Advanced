@@ -43,10 +43,10 @@ jobs:
           pytest ./tests --disable-warnings --swagger-coverage
         continue-on-error: true
 
-      - name: Send swagger coverage report
-        if: ${{ always() }}
-        run: |
-          python -m packages.notifier.bot
+      # - name: Send swagger coverage report
+      #   if: ${{ always() }}
+      #   run: |
+      #     python -m packages.notifier.bot
       
       - name: Archive allure results
         uses: actions/upload-artifact@v4
