@@ -47,9 +47,10 @@ def set_config(request):
     for option in options:
         v.set(f"{option}", request.config.getoption(f"--{option}"))    
     
-    load_dotenv() # loads Telegram secret credentials
-    request.config.stash['telegram-notifier-addfields']['environment'] = config_name
-    request.config.stash['telegram-notifier-addfields']['report'] = 'https://a-kapset.github.io/REST_API_test_automation_Advanced/'
+    # Uncomment to use telegram notifications
+    # load_dotenv() # loads Telegram secret credentials
+    # request.config.stash['telegram-notifier-addfields']['environment'] = config_name
+    # request.config.stash['telegram-notifier-addfields']['report'] = 'https://a-kapset.github.io/REST_API_test_automation_Advanced/'
     
 
 def pytest_addoption(parser):
