@@ -1,9 +1,74 @@
 # Repository for REST API test automation course (advanced part)
 
+## Dependency management (Poetry)
+
+This project uses [Poetry](https://python-poetry.org/) for dependency
+management and virtual environments. Dependencies are declared in
+`pyproject.toml` and pinned in `poetry.lock`.
+
+### Install Poetry
+
+Install Poetry with the official installer (see the docs:
+<https://python-poetry.org/docs/#installing-with-the-official-installer>):
+
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+On Windows (PowerShell):
+
+```powershell
+(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | py -
+```
+
+### Getting started
+
+Configure Poetry to keep the virtual environment inside the project, then
+install all dependencies (including sub-dependencies) from the lock file:
+
+```bash
+poetry config virtualenvs.in-project true
+poetry install --no-root
+```
+
+`--no-root` tells Poetry to install only the dependencies, not the project
+itself as a package. This creates a `.venv` in the project root.
+
+### Migrating from pip to Poetry
+
+If you were previously using `pip` with `requirements.txt`, the project has
+already been migrated to Poetry (`requirements.txt` has been removed). These are
+the exact steps that were used to set it up — you only need to re-run them if
+you are recreating the environment from scratch:
+
+```bash
+# 1. Remove any old pip virtualenv (deactivate it first if it is active)
+deactivate            # only if a virtualenv is currently active
+rm -rf .venv
+
+# 2. Keep the virtualenv inside the project
+poetry config virtualenvs.in-project true
+
+# 3. Create pyproject.toml
+poetry init --no-interaction
+
+# 4. Create the virtualenv and lock file
+poetry install --no-root
+
+# 5. Add the dependencies (Poetry resolves sub-dependencies automatically)
+poetry add aiohttp allure-pytest assertpy curlify distconfig3 environs \
+  Faker marshmallow pydantic PyHamcrest pyTelegramBotAPI pytest \
+  pytest-telegram-notifier python-dotenv PyYAML requests retrying \
+  rootpath setuptools six structlog swagger-coverage toml vyper-config watchdog
+```
+
+> If `pyproject.toml` is edited by hand, run `poetry lock` to refresh
+> `poetry.lock`, followed by `poetry install --no-root`.
+
 ## Running the tests
 
 ```bash
-pytest tests
+poetry run pytest tests
 ```
 
 Swagger coverage recording is **off by default**, so the suite runs anywhere,
@@ -31,17 +96,18 @@ docker build -f Dockerfile-sw-coverage -t dm-api-tests-coverage .
 ```
 
 Run the suite with coverage enabled, mounting the project so the report is
-written back to the host:
+written back to the host. The extra `-v /app/.venv` anonymous volume keeps the
+image's Linux virtualenv from being shadowed by the mounted host `.venv`:
 
 ```bash
-docker run --rm -v "$(pwd)":/app dm-api-tests-coverage
+docker run --rm -v "$(pwd)":/app -v /app/.venv dm-api-tests-coverage
 ```
 
 > **Git Bash on Windows:** prefix the run command with `MSYS_NO_PATHCONV=1` to
 > stop Git Bash from rewriting the container path:
 >
 > ```bash
-> MSYS_NO_PATHCONV=1 docker run --rm -v "$(pwd)":/app dm-api-tests-coverage
+> MSYS_NO_PATHCONV=1 docker run --rm -v "$(pwd)":/app -v /app/.venv dm-api-tests-coverage
 > ```
 
 After the run, open the generated report:
@@ -59,15 +125,15 @@ If you run pytest in a Linux environment yourself (not via the image), enable
 recording and report generation with the flag:
 
 ```bash
-pytest tests --swagger-coverage
+poetry run pytest tests --swagger-coverage
 ```
 
 ## Telegram notifications
 
 The run summary is sent to a Telegram **channel** via the
 `pytest-telegram-notifier` plugin. The `--telegram-notifier` flags are already
-in `pytest.ini` (`addopts`), so a plain `pytest tests` run triggers the
-notification once credentials are configured.
+in `pytest.ini` (`addopts`), so a plain `poetry run pytest tests` run triggers
+the notification once credentials are configured.
 
 Two values are required. They are secrets, so they live in a `.env` file
 (gitignored) and are loaded in `tests/conftest.py` via `load_dotenv()` directly
@@ -150,7 +216,7 @@ TELEGRAM_BOT_ACCESS_TOKEN=123456789:AAE...  # from step 1
 Then run:
 
 ```bash
-pytest tests
+poetry run pytest tests
 ```
 
 `telegram-notifier-config.ini` controls **what/when** is sent (message
