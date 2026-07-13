@@ -12,6 +12,9 @@ from packages.restclient.configuration import Configuration
 from services.dm_api_account import DmApiAccount
 from services.api_mailhog import MailHogApi
 
+
+load_dotenv() # Load .env values into the environment at import time.
+
 structlog.configure(
     processors=[
         structlog.processors.JSONRenderer(indent=4, ensure_ascii=True, sort_keys=True)
@@ -45,12 +48,11 @@ def set_config(request):
     v.read_in_config()
     
     for option in options:
-        v.set(f"{option}", request.config.getoption(f"--{option}"))    
-    
-    # Uncomment to use telegram notifications
-    # load_dotenv() # loads Telegram secret credentials
-    # request.config.stash['telegram-notifier-addfields']['environment'] = config_name
-    # request.config.stash['telegram-notifier-addfields']['report'] = 'https://a-kapset.github.io/REST_API_test_automation_Advanced/'
+        v.set(f"{option}", request.config.getoption(f"--{option}"))
+
+    if request.config.getoption('telegram_notifier', default=False):
+        request.config.stash['telegram-notifier-addfields']['environment'] = config_name
+        request.config.stash['telegram-notifier-addfields']['report'] = 'https://a-kapset.github.io/REST_API_test_automation_Advanced/'
     
 
 def pytest_addoption(parser):
