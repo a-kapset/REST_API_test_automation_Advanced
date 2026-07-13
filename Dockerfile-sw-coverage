@@ -8,11 +8,20 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY . .
+RUN pip3 install poetry
 
-RUN pip3 install -r requirements.txt
+COPY pyproject.toml poetry.lock ./
+
+RUN poetry install --no-root
+
+COPY . .
 
 # Run the suite with swagger coverage enabled. On Linux the ":" in the
 # host:port output directory is valid (unlike Windows), so the report is
 # produced successfully.
-CMD ["pytest", "tests", "--swagger-coverage"]
+#
+# The project directory is bind-mounted at runtime (so the HTML report is
+# written back to the host), which shadows the image's .venv. Re-run
+# `poetry install` at startup to ensure a valid Linux virtualenv exists in
+# the anonymous `/app/.venv` volume before invoking pytest.
+CMD ["sh", "-c", "poetry install --no-root && poetry run pytest tests --swagger-coverage"]

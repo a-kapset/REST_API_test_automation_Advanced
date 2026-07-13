@@ -1,0 +1,23 @@
+# Virtual environments — must be built inside the image, never copied from host
+.venv/
+venv/
+
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local tooling / VCS
+.git/
+.github/
+.idea/
+.vscode/
+
+# Test/report output
+allure-results/
+_site/
+swagger-coverage-output/
+*.html
+
+# Env files with secrets
+.env

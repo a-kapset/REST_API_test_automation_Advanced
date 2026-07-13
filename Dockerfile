@@ -1,7 +1,13 @@
 FROM python:latest
 
+WORKDIR /app
+
+RUN pip3 install poetry
+
+COPY pyproject.toml poetry.lock ./
+
+RUN poetry install --no-root
+
 COPY . .
 
-RUN pip3 install -r requirements.txt
-
-CMD pytest /tests
+CMD ["poetry", "run", "pytest", "tests"]
