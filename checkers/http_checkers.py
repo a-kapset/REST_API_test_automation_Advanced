@@ -1,7 +1,9 @@
 import allure
 from contextlib import contextmanager
-from requests.exceptions import HTTPError, JSONDecodeError
-from requests import codes
+from json import JSONDecodeError
+
+import httpx
+from httpx import codes
 
 
 # Implemented as a context manager rather than a helper that calls the API itself:
@@ -30,9 +32,9 @@ def check_status_code_http(
             if expected_message:
                 raise AssertionError(f"Message '{expected_message}' should be received")
 
-        except HTTPError as err:
+        except httpx.HTTPStatusError as err:
             response = err.response
-            assert response is not None, "HTTPError raised without a response"
+            assert response is not None, "HTTPStatusError raised without a response"
 
             assert response.status_code == expected_status_code, \
                 f"Expected status code is {expected_status_code}, but actual is {response.status_code}"
