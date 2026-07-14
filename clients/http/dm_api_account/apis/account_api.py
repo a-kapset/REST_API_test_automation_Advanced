@@ -8,8 +8,8 @@ from clients.http.dm_api_account.models.user_details_envelope import UserDetails
 from clients.http.dm_api_account.models.user_envelope import UserEnvelope
 from packages.restclient.client import RestClient
 
-class AccountApi(RestClient):
 
+class AccountApi(RestClient):
     @allure.step("Send POST request to /v1/account (Account API)")
     async def post_v1_account(self, registration: Registration):
         """
@@ -24,7 +24,7 @@ class AccountApi(RestClient):
 
         response = await self.post(
             path="/v1/account",
-            json=registration.model_dump(exclude_none=True, by_alias=True)
+            json=registration.model_dump(exclude_none=True, by_alias=True),
         )
 
         return response
@@ -41,14 +41,9 @@ class AccountApi(RestClient):
             _type_: Response
         """
 
-        headers = {
-            "accept": "text/plain"
-        }
+        headers = {"accept": "text/plain"}
 
-        response = await self.put(
-            path=f"/v1/account/{token}",
-            headers=headers
-        )
+        response = await self.put(path=f"/v1/account/{token}", headers=headers)
 
         if validate_response:
             return UserEnvelope(**response.json())
@@ -56,7 +51,9 @@ class AccountApi(RestClient):
         return response
 
     @allure.step("Send PUT request to /v1/account/email (Account API)")
-    async def put_v1_account_email(self, change_email: ChangeEmail, validate_response=True):
+    async def put_v1_account_email(
+        self, change_email: ChangeEmail, validate_response=True
+    ):
         """
         Change registered user email
 
@@ -69,7 +66,7 @@ class AccountApi(RestClient):
 
         response = await self.put(
             path="/v1/account/email",
-            json=change_email.model_dump(exclude_none=True, by_alias=True)
+            json=change_email.model_dump(exclude_none=True, by_alias=True),
         )
 
         if validate_response:
@@ -89,10 +86,7 @@ class AccountApi(RestClient):
             _type_: Response
         """
 
-        response = await self.get(
-            path="/v1/account",
-            **kwargs
-        )
+        response = await self.get(path="/v1/account", **kwargs)
 
         # Validate against the model that matches the returned status code so
         # error responses are validated too (not just 2xx). 401 uses
@@ -108,7 +102,9 @@ class AccountApi(RestClient):
         return response
 
     @allure.step("Send POST request to /v1/account/password (Account API)")
-    async def post_v1_account_password(self, reset_password: ResetPassword, validate_response=True):
+    async def post_v1_account_password(
+        self, reset_password: ResetPassword, validate_response=True
+    ):
         """
         Reset registered user password
 
@@ -121,7 +117,7 @@ class AccountApi(RestClient):
 
         response = await self.post(
             path="/v1/account/password",
-            json=reset_password.model_dump(exclude_none=True, by_alias=True)
+            json=reset_password.model_dump(exclude_none=True, by_alias=True),
         )
 
         if validate_response:
@@ -130,7 +126,9 @@ class AccountApi(RestClient):
         return response
 
     @allure.step("Send PUT request to /v1/account/password (Account API)")
-    async def put_v1_account_password(self, change_password: ChangePassword, validate_response=True):
+    async def put_v1_account_password(
+        self, change_password: ChangePassword, validate_response=True
+    ):
         """
         Change registered user password
 
@@ -143,7 +141,7 @@ class AccountApi(RestClient):
 
         response = await self.put(
             path="/v1/account/password",
-            json=change_password.model_dump(exclude_none=True, by_alias=True)
+            json=change_password.model_dump(exclude_none=True, by_alias=True),
         )
 
         if validate_response:

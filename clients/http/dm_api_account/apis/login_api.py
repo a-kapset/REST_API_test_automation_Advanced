@@ -7,8 +7,10 @@ from packages.restclient.client import RestClient
 
 
 class LoginApi(RestClient):
-    @allure.step("Send POST request to /v1/account/login (Login API)")            
-    async def post_v1_account_login(self, login_credentials: LoginCredentials, validate_response=True):
+    @allure.step("Send POST request to /v1/account/login (Login API)")
+    async def post_v1_account_login(
+        self, login_credentials: LoginCredentials, validate_response=True
+    ):
         """
         Authenticate via credentials
 
@@ -21,7 +23,7 @@ class LoginApi(RestClient):
 
         response = await self.post(
             path="/v1/account/login",
-            json=login_credentials.model_dump(exclude_none=True, by_alias=True)
+            json=login_credentials.model_dump(exclude_none=True, by_alias=True),
         )
 
         # Validate against the model that matches the returned status code so that
@@ -41,8 +43,8 @@ class LoginApi(RestClient):
                 return ProblemDetails(**response.json())
 
         return response
-    
-    @allure.step("Send DELETE request to /v1/account/login (Login API)")            
+
+    @allure.step("Send DELETE request to /v1/account/login (Login API)")
     async def delete_v1_account_login(self, **kwargs):
         """
         Logout as current user
@@ -51,14 +53,11 @@ class LoginApi(RestClient):
             _type_: Response
         """
 
-        response = await self.delete(
-            path="/v1/account/login",
-            **kwargs
-        )
-        
+        response = await self.delete(path="/v1/account/login", **kwargs)
+
         return response
-    
-    @allure.step("Send DELETE request to /v1/account/login/all (Login API)")            
+
+    @allure.step("Send DELETE request to /v1/account/login/all (Login API)")
     async def delete_v1_account_login_all(self, **kwargs):
         """
         Logout from every device
@@ -67,9 +66,6 @@ class LoginApi(RestClient):
             _type_: Response
         """
 
-        response = await self.delete(
-            path="/v1/account/login/all",
-            **kwargs
-        )
-        
-        return response  
+        response = await self.delete(path="/v1/account/login/all", **kwargs)
+
+        return response

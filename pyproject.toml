@@ -53,3 +53,7 @@ addopts = "--alluredir=allure-results"
 # Telegram notifications (disabled by default; the plugin blocks when unconfigured):
 #   --telegram-notifier
 #   --telegram-notifier-config-file=telegram-notifier-config.ini
+[dependency-groups]
+lint = [
+    "ruff (>=0.15.21,<0.16.0)"
+]

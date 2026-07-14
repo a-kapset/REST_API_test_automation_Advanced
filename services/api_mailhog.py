@@ -3,6 +3,7 @@ from clients.http.api_mailhog.apis.mailhog_api import MailhogApi
 
 # Facade implementation
 
+
 class MailHogApi:
     def __init__(self, configuration: Configuration):
         self.configuration = configuration

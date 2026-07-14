@@ -13,7 +13,7 @@ from services.dm_api_account import DmApiAccount
 from services.api_mailhog import MailHogApi
 
 
-load_dotenv() # Load .env values into the environment at import time.
+load_dotenv()  # Load .env values into the environment at import time.
 
 structlog.configure(
     processors=[
@@ -23,15 +23,15 @@ structlog.configure(
 
 
 options = (
-    'service.dm_api_account',
-    'service.mailhog',
-    'user.login',
-    'user.password',
-    'user.new_password',
+    "service.dm_api_account",
+    "service.mailhog",
+    "user.login",
+    "user.password",
+    "user.new_password",
 )
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def set_config(request):
     """
     Loads config for the environment given by --env and layers CLI overrides.
@@ -41,19 +41,21 @@ def set_config(request):
     Session-scoped and autouse, so it runs once before any test.
     """
 
-    config = Path(__file__).joinpath('../../').joinpath('config')
-    config_name = request.config.getoption('--env')
+    config = Path(__file__).joinpath("../../").joinpath("config")
+    config_name = request.config.getoption("--env")
     v.set_config_name(config_name)
     v.add_config_path(config)
     v.read_in_config()
-    
+
     for option in options:
         v.set(f"{option}", request.config.getoption(f"--{option}"))
 
-    if request.config.getoption('telegram_notifier', default=False):
-        request.config.stash['telegram-notifier-addfields']['environment'] = config_name
-        request.config.stash['telegram-notifier-addfields']['report'] = 'https://a-kapset.github.io/REST_API_test_automation_Advanced/'
-    
+    if request.config.getoption("telegram_notifier", default=False):
+        request.config.stash["telegram-notifier-addfields"]["environment"] = config_name
+        request.config.stash["telegram-notifier-addfields"]["report"] = (
+            "https://a-kapset.github.io/REST_API_test_automation_Advanced/"
+        )
+
 
 def pytest_addoption(parser):
     """
@@ -64,19 +66,19 @@ def pytest_addoption(parser):
     overridden from the command line.
     """
 
-    parser.addoption('--env', action='store', default='stg', help='run stg')
+    parser.addoption("--env", action="store", default="stg", help="run stg")
 
     parser.addoption(
-        '--swagger-coverage',
-        action='store_true',
+        "--swagger-coverage",
+        action="store_true",
         default=False,
-        help='Collect requests and generate a swagger coverage report. '
-             'Requires a Java runtime and a filesystem that allows ":" in '
-             'paths (i.e. run in Docker via Dockerfile-sw-coverage, not on Windows).'
+        help="Collect requests and generate a swagger coverage report. "
+        'Requires a Java runtime and a filesystem that allows ":" in '
+        "paths (i.e. run in Docker via Dockerfile-sw-coverage, not on Windows).",
     )
 
     for option in options:
-        parser.addoption(f"--{option}", action='store', default=None)
+        parser.addoption(f"--{option}", action="store", default=None)
 
 
 def pytest_configure(config):
@@ -87,7 +89,9 @@ def pytest_configure(config):
     is early enough.
     """
 
-    os.environ['SWAGGER_COVERAGE_ENABLED'] = '1' if config.getoption('--swagger-coverage') else '0'
+    os.environ["SWAGGER_COVERAGE_ENABLED"] = (
+        "1" if config.getoption("--swagger-coverage") else "0"
+    )
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -100,22 +104,26 @@ def setup_swagger_coverage(request):
     session and generates the HTML report afterwards.
     """
 
-    if not request.config.getoption('--swagger-coverage'):
+    if not request.config.getoption("--swagger-coverage"):
         yield
         return
 
-    reporter = CoverageReporter(api_name="dm-api-reporter", host="http://185.185.143.231:5051")
+    reporter = CoverageReporter(
+        api_name="dm-api-reporter", host="http://185.185.143.231:5051"
+    )
     reporter.cleanup_input_files()
     reporter.setup("/swagger/Account/swagger.json")
     yield
     reporter.generate_report()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def mailhog_api_fxt():
     """Session-scoped MailHog API client, used to read activation emails."""
-    
-    mailhog_api_configuration = Configuration(host=v.get('service.mailhog'), disable_log=True)
+
+    mailhog_api_configuration = Configuration(
+        host=v.get("service.mailhog"), disable_log=True
+    )
     mailhog_client = MailHogApi(mailhog_api_configuration)
 
     return mailhog_client
@@ -124,8 +132,10 @@ def mailhog_api_fxt():
 @pytest.fixture
 def dm_account_api_fxt():
     """Returns a low-level DmApiAccount client for the account service API."""
-    
-    dm_api_configuration = Configuration(host=v.get('service.dm_api_account'), disable_log=False)
+
+    dm_api_configuration = Configuration(
+        host=v.get("service.dm_api_account"), disable_log=False
+    )
     account_client = DmApiAccount(dm_api_configuration)
 
     return account_client
@@ -137,8 +147,10 @@ def account_helper_fxt(dm_account_api_fxt, mailhog_api_fxt):
     Returns an unauthenticated AccountHelper wrapping the account and MailHog
     clients. Use when the test drives user creation/registration/login itself.
     """
-    
-    account_helper = AccountHelper(dm_account_api=dm_account_api_fxt, mailhog_api=mailhog_api_fxt)
+
+    account_helper = AccountHelper(
+        dm_account_api=dm_account_api_fxt, mailhog_api=mailhog_api_fxt
+    )
 
     return account_helper
 
@@ -158,7 +170,7 @@ def user_data_fxt():
       credentials (e.g. to log in again or change its password). Both share
       the same function-scoped instance, so the values match.
     """
-    
+
     user = _get_user_data()
 
     return user
@@ -175,10 +187,16 @@ async def account_helper_auth_existing_fxt(mailhog_api_fxt):
     doesn't care about the specific account.
     """
 
-    dm_api_configuration = Configuration(host=v.get('service.dm_api_account'), disable_log=False)
+    dm_api_configuration = Configuration(
+        host=v.get("service.dm_api_account"), disable_log=False
+    )
     account_api_client = DmApiAccount(dm_api_configuration)
-    account_helper = AccountHelper(dm_account_api=account_api_client, mailhog_api=mailhog_api_fxt)
-    await account_helper.authenticate_client(login=v.get('user.login'), password=v.get('user.password'))
+    account_helper = AccountHelper(
+        dm_account_api=account_api_client, mailhog_api=mailhog_api_fxt
+    )
+    await account_helper.authenticate_client(
+        login=v.get("user.login"), password=v.get("user.password")
+    )
 
     return account_helper
 
@@ -200,9 +218,13 @@ async def account_helper_auth_new_fxt(mailhog_api_fxt, user_data_fxt):
     password = user_data_fxt.password
     email = user_data_fxt.email
 
-    dm_api_configuration = Configuration(host=v.get('service.dm_api_account'), disable_log=False)
+    dm_api_configuration = Configuration(
+        host=v.get("service.dm_api_account"), disable_log=False
+    )
     account_api_client = DmApiAccount(dm_api_configuration)
-    account_helper = AccountHelper(dm_account_api=account_api_client, mailhog_api=mailhog_api_fxt)
+    account_helper = AccountHelper(
+        dm_account_api=account_api_client, mailhog_api=mailhog_api_fxt
+    )
 
     await account_helper.register_new_user(login=login, password=password, email=email)
     await account_helper.activate_user(login=login)
@@ -214,15 +236,14 @@ async def account_helper_auth_new_fxt(mailhog_api_fxt, user_data_fxt):
 
 
 def _get_user_data():
-    login = f'ab{int(time.time_ns())}'
+    login = f"ab{int(time.time_ns())}"
     email = f"{login}@test.com"
     updated_email = f"upd_{login}@test.com"
-    password = v.get('user.password')
-    new_password = v.get('user.new_password')
+    password = v.get("user.password")
+    new_password = v.get("user.new_password")
 
     User = namedtuple(
-        'User',
-        ['login', 'email', 'updated_email', 'password','new_password']
+        "User", ["login", "email", "updated_email", "password", "new_password"]
     )
 
     user = User(
@@ -230,8 +251,7 @@ def _get_user_data():
         email=email,
         updated_email=updated_email,
         password=password,
-        new_password=new_password        
+        new_password=new_password,
     )
-    
+
     return user
-    

@@ -17,12 +17,9 @@ class MailhogApi(RestClient):
         """
 
         params = {
-            'limit': limit,
+            "limit": limit,
         }
 
-        response = await self.get(
-            path="/api/v2/messages",
-            params=params
-        )
+        response = await self.get(path="/api/v2/messages", params=params)
 
         return response
