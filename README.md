@@ -1,10 +1,128 @@
-# Repository for REST API test automation course (advanced part)
+# REST API Test Automation (Advanced)
 
-## Dependency management (Poetry)
+Automated **functional testing framework** for the **DM.API Account** REST
+service — user registration, activation, login/logout, and email/password
+changes. Tests are written in Python with **pytest** and an **async httpx**
+client, run end-to-end against a live server plus a **MailHog** inbox (used to
+read activation and password-reset emails).
 
-This project uses [Poetry](https://python-poetry.org/) for dependency
-management and virtual environments. Dependencies are declared in
-`pyproject.toml` and pinned in `poetry.lock`.
+> This repository is the advanced part of a REST API test automation course.
+
+## Contents
+
+- [Overview](#overview)
+- [Tech stack](#tech-stack)
+- [Project structure](#project-structure)
+- [Architecture](#architecture)
+- [Getting started (Poetry)](#getting-started-poetry)
+- [Running the tests](#running-the-tests)
+- [Test layout & conventions](#test-layout--conventions)
+- [Swagger contract vs. real API](#swagger-contract-vs-real-api)
+- [Linting and formatting (Ruff)](#linting-and-formatting-ruff)
+- [Type checking (mypy)](#type-checking-mypy)
+- [Git hooks (pre-commit)](#git-hooks-pre-commit)
+- [Reporting (Allure)](#reporting-allure)
+- [Swagger coverage report](#swagger-coverage-report)
+- [Telegram notifications](#telegram-notifications)
+- [Continuous integration](#continuous-integration)
+- [Docker](#docker)
+- [Project documents](#project-documents)
+
+## Overview
+
+- **System under test:** DM.API Account service (`http://185.185.143.231:5051`),
+  described by the OpenAPI 3.0.1 contract in [`swagger/swagger_account.json`](swagger/swagger_account.json).
+- **Supporting service:** MailHog (`:5025`) — the framework reads activation and
+  password-reset emails from it to extract confirmation tokens.
+- **Style:** fully **async** tests (`pytest-asyncio`, auto mode), a layered client
+  design, **pydantic v2** request/response models, and **Allure** reporting.
+- **Auth:** the login response carries an `x-dm-auth-token` header that is then
+  sent on authenticated requests.
+
+## Tech stack
+
+| Area | Choice |
+|------|--------|
+| Language | Python `>=3.13` (dev/CI run **3.14**) |
+| Dependency manager | **Poetry** (`package-mode = false`) |
+| HTTP client | **httpx** (`AsyncClient`) |
+| Test runner | **pytest** + **pytest-asyncio** (`asyncio_mode = auto`) |
+| Models / validation | **pydantic v2** (`extra="forbid"`, camelCase aliases) |
+| Assertions | **PyHamcrest** + **assertpy** (soft assertions) |
+| Reporting | **Allure** (`allure-pytest`) |
+| API coverage | **swagger-coverage** |
+| Logging | **structlog** (JSON) + **curlify2** (curl per request) |
+| Config | **vyper-config** (YAML env files + CLI overrides) |
+| Notifications | **pytest-telegram-notifier** / **pyTelegramBotAPI** |
+| Lint / format / types | **Ruff**, **mypy** |
+| Git hooks | **pre-commit** |
+
+The authoritative dependency list is [`pyproject.toml`](pyproject.toml) (pinned in
+`poetry.lock`).
+
+## Project structure
+
+```
+clients/http/            Low-level API clients (transport + typed methods)
+  dm_api_account/apis/     AccountApi, LoginApi
+  dm_api_account/models/   pydantic request/response DTOs
+  api_mailhog/apis/        MailhogApi (read emails)
+services/                Facades grouping clients per service (DmApiAccount, MailHogApi)
+helpers/                 AccountHelper — multi-step business flows + retrier decorator
+checkers/                Reusable response assertions (status code, hamcrest, assertpy)
+packages/
+  restclient/              RestClient (httpx wrapper), Configuration, allure utilities
+  notifier/                Standalone Telegram sender for the coverage report
+tests/
+  conftest.py              Fixtures, CLI options (--env), config loading
+  functional/              Functional tests, grouped by service/endpoint
+  user.py                  User NamedTuple (test-user credentials)
+config/                  Per-environment YAML (stg.yaml, prod.yaml) read by Vyper
+swagger/                 OpenAPI 3.0.1 contract for the account service
+.github/workflows/       CI pipeline (lint → test → Allure report → GitHub Pages)
+```
+
+## Architecture
+
+Requests flow through cleanly separated layers, each with one responsibility:
+
+```
+Test → Checker (assert)          Test → AccountHelper (business flow)
+                                          │
+                                          ▼
+                                 DmApiAccount / MailHogApi     ← service facades
+                                          │
+                                          ▼
+                          AccountApi / LoginApi / MailhogApi   ← typed API clients
+                                          │  (subclass)
+                                          ▼
+                                      RestClient               ← httpx transport
+```
+
+- **`RestClient`** (`packages/restclient/client.py`) wraps `httpx.AsyncClient` and
+  centralizes logging, curl generation, Allure attachments, optional
+  swagger-coverage recording, and `raise_for_status()`.
+- **API clients** (`AccountApi`, `LoginApi`, `MailhogApi`) subclass `RestClient`
+  and expose one typed method per endpoint, serializing pydantic request models
+  and (optionally) validating responses into pydantic models.
+- **Service facades** (`DmApiAccount`, `MailHogApi`) group the clients of one
+  service behind a single object sharing one `Configuration`.
+- **`AccountHelper`** composes multi-step business flows (register → activate →
+  login, change password via emailed token, authenticate, …).
+- **Checkers** hold reusable assertions; **tests** orchestrate fixtures + helpers
+  + checkers and contain no transport logic.
+
+**To add an endpoint:** define pydantic model(s) → add a client method
+(`@allure.step`, `model_dump(by_alias=True, exclude_none=True)`) → add an
+`AccountHelper` flow if it is multi-step → add a checker → add a test. Response
+validation is dispatched by **status code** (see `AccountApi.get_v1_account` and
+`LoginApi.post_v1_account_login`), so error bodies are validated too, not just 2xx.
+
+## Getting started (Poetry)
+
+This project uses [Poetry](https://python-poetry.org/) for dependency management
+and virtual environments. Dependencies are declared in `pyproject.toml` and
+pinned in `poetry.lock`.
 
 ### Install Poetry
 
@@ -21,46 +139,19 @@ On Windows (PowerShell):
 (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | py -
 ```
 
-### Getting started
+### Install dependencies
 
-Configure Poetry to keep the virtual environment inside the project, then
-install all dependencies (including sub-dependencies) from the lock file:
+Configure Poetry to keep the virtual environment inside the project, then install
+all dependencies (including sub-dependencies) from the lock file:
 
 ```bash
 poetry config virtualenvs.in-project true
-poetry install --no-root
+poetry install --no-root              # runtime dependencies
+poetry install --no-root --with lint  # + Ruff & mypy (the "lint" group)
 ```
 
-`--no-root` tells Poetry to install only the dependencies, not the project
-itself as a package. This creates a `.venv` in the project root.
-
-### Migrating from pip to Poetry
-
-If you were previously using `pip` with `requirements.txt`, the project has
-already been migrated to Poetry (`requirements.txt` has been removed). These are
-the exact steps that were used to set it up — you only need to re-run them if
-you are recreating the environment from scratch:
-
-```bash
-# 1. Remove any old pip virtualenv (deactivate it first if it is active)
-deactivate            # only if a virtualenv is currently active
-rm -rf .venv
-
-# 2. Keep the virtualenv inside the project
-poetry config virtualenvs.in-project true
-
-# 3. Create pyproject.toml
-poetry init --no-interaction
-
-# 4. Create the virtualenv and lock file
-poetry install --no-root
-
-# 5. Add the dependencies (Poetry resolves sub-dependencies automatically)
-poetry add aiohttp allure-pytest assertpy curlify distconfig3 environs \
-  Faker marshmallow pydantic PyHamcrest pyTelegramBotAPI pytest \
-  pytest-telegram-notifier python-dotenv PyYAML requests retrying \
-  rootpath setuptools six structlog swagger-coverage toml vyper-config watchdog
-```
+`--no-root` tells Poetry to install only the dependencies, not the project itself
+as a package. This creates a `.venv` in the project root.
 
 > If `pyproject.toml` is edited by hand, run `poetry lock` to refresh
 > `poetry.lock`, followed by `poetry install --no-root`.
@@ -68,11 +159,47 @@ poetry add aiohttp allure-pytest assertpy curlify distconfig3 environs \
 ## Running the tests
 
 ```bash
-poetry run pytest tests
+poetry run pytest tests                     # full suite
+poetry run pytest tests --env stg           # pick a config environment (default: stg)
+poetry run pytest path::Class::test_case    # a single test
 ```
 
-Swagger coverage recording is **off by default**, so the suite runs anywhere,
-including Windows.
+- Tests are **async** and hit the **live** account service and MailHog, so they
+  **fail offline** and can be **flaky** on email polling (mitigated by the
+  `retrier` decorator: 5 attempts, 1s apart).
+- Swagger coverage recording is **off by default**, so the suite runs anywhere,
+  including Windows (see [Swagger coverage report](#swagger-coverage-report)).
+- Config values (`service.*`, `user.*`) come from `config/<env>.yaml` via Vyper
+  and can be overridden per option, e.g. `--user.login`, `--service.dm_api_account`.
+
+## Test layout & conventions
+
+- **Location:** `tests/functional/`, grouped by service and endpoint. Files are
+  named `test_<method>_<path>.py`; classes `Tests<Method><Path><Positive|Negative>`.
+- **Allure:** classes carry `@allure.suite` / `@allure.sub_suite`; tests carry
+  `@allure.title`; client and helper methods carry `@allure.step`.
+- **Assertions — three complementary styles:**
+  - `check_status_code_http(expected_status_code, expected_message)` — a context
+    manager that checks status + the response `title`. Note it treats **any 2xx**
+    as success, so it cannot distinguish 200 vs 201 vs 204; assert exact codes for
+    non-2xx cases.
+  - **PyHamcrest** matchers for deep structural checks (see `checkers/`).
+  - **assertpy** `soft_assertions()` for grouped soft checks.
+- **Fixtures** (`tests/conftest.py`):
+  - `account_helper_fxt` — unauthenticated helper (the test drives registration).
+  - `account_helper_auth_new_fxt` — creates + activates + logs in a fresh user.
+  - `account_helper_auth_existing_fxt` — logs in a pre-existing hardcoded user.
+  - `user_data_fxt` — a unique test user (`login = ab<time_ns>`).
+
+## Swagger contract vs. real API
+
+`swagger/swagger_account.json` is the **declared contract, not a guarantee** — the
+live API deviates from it in several places. When the schema and the live API
+disagree, **the live response is the source of truth**. Known deviations (error
+bodies are `ProblemDetails`, not the declared `BadRequestError`/`GeneralError`;
+login uses 400 vs 403 with distinct meanings; `GET /v1/account` returns an
+undeclared 401; a missing required field returns 500) are documented in
+[`api-notes.md`](api-notes.md). Add new findings there as you discover them.
 
 ## Linting and formatting (Ruff)
 
@@ -100,6 +227,9 @@ Ruff, it lives in the `lint` dependency group inside Poetry's virtualenv and is
 ```bash
 poetry run mypy .   # static type check across the project
 ```
+
+Settings live in `mypy.ini` (`disallow_untyped_defs = True`, plus a targeted
+`arg-type` suppression for hamcrest matchers under `checkers/`).
 
 ## Git hooks (pre-commit)
 
@@ -187,6 +317,20 @@ poetry run pre-commit run --all-files  # against the whole repo
 
 > `pre-commit autoupdate` bumps each `repo`'s `rev` to its latest release.
 
+## Reporting (Allure)
+
+Every run writes Allure results to `allure-results/` (configured via
+`addopts = --alluredir=allure-results` in `pyproject.toml`). To view a report
+locally you need the [Allure CLI](https://allurereport.org/docs/install/):
+
+```bash
+allure serve allure-results        # generate + open a temporary report
+allure generate -c allure-results -o allure-report   # write a static report
+```
+
+CI generates the report automatically and publishes it to GitHub Pages
+(see [Continuous integration](#continuous-integration)).
+
 ## Swagger coverage report
 
 Generating the report has two requirements that Windows does not satisfy:
@@ -244,9 +388,11 @@ poetry run pytest tests --swagger-coverage
 ## Telegram notifications
 
 The run summary is sent to a Telegram **channel** via the
-`pytest-telegram-notifier` plugin. The `--telegram-notifier` flags are already
-in `pytest.ini` (`addopts`), so a plain `poetry run pytest tests` run triggers
-the notification once credentials are configured.
+`pytest-telegram-notifier` plugin. The plugin flags (`--telegram-notifier` and
+`--telegram-notifier-config-file=telegram-notifier-config.ini`) are **off by
+default** — they are documented as commented-out `addopts` in `pyproject.toml`
+because the plugin blocks when credentials are not configured. Enable them once
+credentials are in place.
 
 Two values are required. They are secrets, so they live in a `.env` file
 (gitignored) and are loaded in `tests/conftest.py` via `load_dotenv()` directly
@@ -319,17 +465,12 @@ https://api.telegram.org/bot<TOKEN>/getChat?chat_id=<CHAT_ID>
 
 ### 5. Configure and run
 
-Put the values in `.env` (copied from `.env.example`):
-
-```
-TELEGRAM_BOT_CHAT_ID=-1004415010693        # from step 4
-TELEGRAM_BOT_ACCESS_TOKEN=123456789:AAE...  # from step 1
-```
-
-Then run:
+Put the values in `.env` (copied from `.env.example`), then run the suite with
+the notifier flags enabled (add them to `addopts` in `pyproject.toml` or pass on
+the command line):
 
 ```bash
-poetry run pytest tests
+poetry run pytest tests --telegram-notifier --telegram-notifier-config-file=telegram-notifier-config.ini
 ```
 
 `telegram-notifier-config.ini` controls **what/when** is sent (message
@@ -345,3 +486,43 @@ template, stickers on pass/fail, mentions on failure, etc.).
   project root and both keys are filled in. `load_dotenv()` does not override
   vars already set in the real environment (handy for CI, where you can inject
   them as secrets instead of a file).
+
+## Continuous integration
+
+`.github/workflows/python-tests.yml` runs on every push and pull request:
+
+1. **`mypy-linter`** and **`ruff-checker`** — static checks (Python 3.14).
+2. **`test`** — installs Java + Poetry and runs
+   `pytest ./tests --swagger-coverage`, then sends the coverage report to
+   Telegram and uploads the Allure results as an artifact.
+3. **`generate-report`** / **`publish-report`** — build the Allure HTML report and
+   deploy it to **GitHub Pages**.
+
+The published report is available at
+<https://a-kapset.github.io/REST_API_test_automation_Advanced/>. Telegram
+credentials are injected from GitHub Actions **secrets**, never from the repo.
+
+## Docker
+
+Two images are provided:
+
+- **`Dockerfile`** — a plain image that runs the suite (`poetry run pytest tests`).
+- **`Dockerfile-sw-coverage`** — adds a JRE and runs with `--swagger-coverage`
+  to produce the swagger-coverage HTML report (see
+  [Swagger coverage report](#swagger-coverage-report)).
+
+```bash
+docker build -t dm-api-tests .
+docker run --rm dm-api-tests
+```
+
+## Project documents
+
+| File | Purpose |
+|------|---------|
+| [`README.md`](README.md) | Primary source of information about the project (this file). |
+| [`CLAUDE.md`](CLAUDE.md) | Guidance for the AI assistant (role, workflow, commands, conventions). |
+| [`project-inventory.md`](project-inventory.md) | Dated snapshot of the project state; regenerated on request. |
+| [`api-notes.md`](api-notes.md) | Working memory of real API behavior vs. the swagger contract. |
+| [`to_think_about.md`](to_think_about.md) | Backlog of deferred technical ideas. |
+</content>

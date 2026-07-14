@@ -70,3 +70,8 @@ tg_bot_creds.txt
 # linters and formatters
 .ruff_cache/
 .mypy_cache/
+
+# LLM
+.claude/
+
+.books/
