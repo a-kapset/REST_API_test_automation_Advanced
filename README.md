@@ -101,6 +101,92 @@ Ruff, it lives in the `lint` dependency group inside Poetry's virtualenv and is
 poetry run mypy .   # static type check across the project
 ```
 
+## Git hooks (pre-commit)
+
+[pre-commit](https://pre-commit.com/) runs checks automatically on every
+`git commit`, catching issues before they land in a commit. The hooks it runs
+are declared in `.pre-commit-config.yaml`. The current setup runs:
+
+- the standard [pre-commit-hooks](https://github.com/pre-commit/pre-commit-hooks)
+  (validate YAML, fix end-of-file newlines, strip trailing whitespace, block
+  large files);
+- **ruff format**, **ruff check**, and **mypy** (see the sections above) as
+  `local` hooks that reuse the Poetry virtualenv.
+
+A test run can also be added as a commit hook — the config includes a
+commented-out example that runs the `POST /v1/account` base test. It is off by
+default because that test hits the live account service, which makes commits
+slow and fails when the environment is offline; uncomment it to enable.
+
+### Configure hooks (`.pre-commit-config.yaml`)
+
+Each `repo` entry pins a hook source by `rev` and lists the hook `id`s to run.
+`local` hooks instead run a command from this environment via `entry` — here
+`poetry run ...`, so they use the same virtualenv as everything else.
+`pass_filenames: false` stops pre-commit from appending the staged file paths
+to the command (needed for `mypy .` and pytest, which take their own targets).
+
+```yaml
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format
+        entry: poetry run ruff format
+        language: system
+        types: [python]
+      - id: ruff-check
+        name: ruff check
+        entry: poetry run ruff check
+        language: system
+        types: [python]
+      - id: mypy
+        name: mypy
+        entry: poetry run mypy .
+        language: system
+        types: [python]
+        pass_filenames: false
+      # Tests can also be run as a commit hook (off by default — hits the live
+      # account service, so it slows commits and fails when offline):
+      # - id: post-v1-account-base-test
+      #   name: post_v1_account base test
+      #   entry: poetry run pytest tests/functional/post_v1_account/test_post_v1_account_base.py
+      #   language: system
+      #   types: [python]
+      #   pass_filenames: false
+```
+
+To add a hook, append its `id` under an existing `repo`, or add a new `repo`
+block.
+
+### Enable the hooks (one-time)
+
+pre-commit is in the `lint` dependency group, so run it through Poetry. After
+cloning, install the git hook once so it fires on every commit:
+
+```bash
+poetry run pre-commit install   # writes .git/hooks/pre-commit
+```
+
+### Run the hooks
+
+Hooks run automatically on `git commit` against staged files. To run them
+manually:
+
+```bash
+poetry run pre-commit run              # against staged files
+poetry run pre-commit run --all-files  # against the whole repo
+```
+
+> `pre-commit autoupdate` bumps each `repo`'s `rev` to its latest release.
+
 ## Swagger coverage report
 
 Generating the report has two requirements that Windows does not satisfy:

@@ -1,0 +1,38 @@
+repos:
+
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v3.2.0
+  hooks:
+  - id: check-yaml
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+  - id: check-added-large-files
+
+- repo: local
+  hooks:
+  - id: ruff-format
+    name: ruff format
+    entry: poetry run ruff format
+    language: system
+    types: [python]
+  - id: ruff-check
+    name: ruff check
+    entry: poetry run ruff check
+    language: system
+    types: [python]
+  - id: mypy
+    name: mypy
+    entry: poetry run mypy .
+    language: system
+    types: [python]
+    pass_filenames: false
+
+  # Tests can also be run as a commit hook. Disabled by default: this hits the
+  # live account service (register -> activate -> login), so it makes commits
+  # slow and fails when the environment is offline. Uncomment to enable.
+  # - id: post-v1-account-base-test
+  #   name: post_v1_account base test
+  #   entry: poetry run pytest tests/functional/post_v1_account/test_post_v1_account_base.py
+  #   language: system
+  #   types: [python]
+  #   pass_filenames: false
