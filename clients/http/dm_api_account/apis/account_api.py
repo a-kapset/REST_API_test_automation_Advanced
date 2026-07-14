@@ -1,4 +1,7 @@
+from typing import Any
+
 import allure
+import httpx
 from clients.http.dm_api_account.models.change_email import ChangeEmail
 from clients.http.dm_api_account.models.change_password import ChangePassword
 from clients.http.dm_api_account.models.problem_details import ProblemDetails
@@ -11,7 +14,7 @@ from packages.restclient.client import RestClient
 
 class AccountApi(RestClient):
     @allure.step("Send POST request to /v1/account (Account API)")
-    async def post_v1_account(self, registration: Registration):
+    async def post_v1_account(self, registration: Registration) -> httpx.Response:
         """
         Register new user
 
@@ -30,7 +33,7 @@ class AccountApi(RestClient):
         return response
 
     @allure.step("Send PUT request to /v1/account/[token] (Account API)")
-    async def put_v1_account_token(self, token, validate_response=True):
+    async def put_v1_account_token(self, token: str, validate_response: bool = True) -> UserEnvelope | httpx.Response:
         """
         Activate registered user
 
@@ -52,8 +55,8 @@ class AccountApi(RestClient):
 
     @allure.step("Send PUT request to /v1/account/email (Account API)")
     async def put_v1_account_email(
-        self, change_email: ChangeEmail, validate_response=True
-    ):
+        self, change_email: ChangeEmail, validate_response: bool = True
+    ) -> UserEnvelope | httpx.Response:
         """
         Change registered user email
 
@@ -75,7 +78,9 @@ class AccountApi(RestClient):
         return response
 
     @allure.step("Send GET request to /v1/account (Account API)")
-    async def get_v1_account(self, validate_response=True, **kwargs):
+    async def get_v1_account(
+        self, validate_response: bool = True, **kwargs: Any
+    ) -> UserDetailsEnvelope | ProblemDetails | httpx.Response:
         """
         Get current user
 
@@ -103,8 +108,8 @@ class AccountApi(RestClient):
 
     @allure.step("Send POST request to /v1/account/password (Account API)")
     async def post_v1_account_password(
-        self, reset_password: ResetPassword, validate_response=True
-    ):
+        self, reset_password: ResetPassword, validate_response: bool = True
+    ) -> UserEnvelope | httpx.Response:
         """
         Reset registered user password
 
@@ -127,8 +132,8 @@ class AccountApi(RestClient):
 
     @allure.step("Send PUT request to /v1/account/password (Account API)")
     async def put_v1_account_password(
-        self, change_password: ChangePassword, validate_response=True
-    ):
+        self, change_password: ChangePassword, validate_response: bool = True
+    ) -> UserEnvelope | httpx.Response:
         """
         Change registered user password
 

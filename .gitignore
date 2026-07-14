@@ -48,9 +48,6 @@ coverage.xml
 .pytest_cache/
 .hypothesis/
 
-# mypy
-.mypy_cache/
-
 # Allure
 allure-results/
 allure-report/
@@ -69,3 +66,7 @@ swagger-doc-dm-api-reporter.json
 
 # tg bot
 tg_bot_creds.txt
+
+# linters and formatters
+.ruff_cache/
+.mypy_cache/

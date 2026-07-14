@@ -1,4 +1,6 @@
 import allure
+from helpers.account_helper import AccountHelper
+from tests.user import User
 
 
 @allure.suite("Tests for the method PUT v1/account/password")
@@ -6,8 +8,8 @@ import allure
 class TestsPutV1AccountPassword:
     @allure.title("Change password and login with the new password")
     async def test_put_v1_account_password(
-        self, account_helper_auth_new_fxt, user_data_fxt
-    ):
+        self, account_helper_auth_new_fxt: AccountHelper, user_data_fxt: User
+    ) -> None:
         account_api = account_helper_auth_new_fxt
         user_data = user_data_fxt
 
@@ -18,6 +20,4 @@ class TestsPutV1AccountPassword:
             new_password=user_data.new_password,
         )
 
-        await account_api.user_login(
-            login=user_data.login, password=user_data.new_password
-        )
+        await account_api.user_login(login=user_data.login, password=user_data.new_password)

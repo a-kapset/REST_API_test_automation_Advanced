@@ -1,4 +1,7 @@
+from typing import Any
+
 import allure
+import httpx
 from clients.http.dm_api_account.models.login_credentials import LoginCredentials
 from clients.http.dm_api_account.models.user_envelope import UserEnvelope
 from clients.http.dm_api_account.models.bad_request_error import BadRequestError
@@ -9,8 +12,8 @@ from packages.restclient.client import RestClient
 class LoginApi(RestClient):
     @allure.step("Send POST request to /v1/account/login (Login API)")
     async def post_v1_account_login(
-        self, login_credentials: LoginCredentials, validate_response=True
-    ):
+        self, login_credentials: LoginCredentials, validate_response: bool = True
+    ) -> UserEnvelope | BadRequestError | ProblemDetails | httpx.Response:
         """
         Authenticate via credentials
 
@@ -45,7 +48,7 @@ class LoginApi(RestClient):
         return response
 
     @allure.step("Send DELETE request to /v1/account/login (Login API)")
-    async def delete_v1_account_login(self, **kwargs):
+    async def delete_v1_account_login(self, **kwargs: Any) -> httpx.Response:
         """
         Logout as current user
 
@@ -58,7 +61,7 @@ class LoginApi(RestClient):
         return response
 
     @allure.step("Send DELETE request to /v1/account/login/all (Login API)")
-    async def delete_v1_account_login_all(self, **kwargs):
+    async def delete_v1_account_login_all(self, **kwargs: Any) -> httpx.Response:
         """
         Logout from every device
 

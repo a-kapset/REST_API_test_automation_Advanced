@@ -91,6 +91,16 @@ poetry run ruff check .    # run the linter
 > `poetry env activate` (Poetry 2.x) and paste the printed command into your
 > shell; `ruff` then works directly for that session.
 
+## Type checking (mypy)
+
+[mypy](https://mypy.readthedocs.io/) statically checks type annotations. Like
+Ruff, it lives in the `lint` dependency group inside Poetry's virtualenv and is
+**not** on your global `PATH`, so run it through Poetry:
+
+```bash
+poetry run mypy .   # static type check across the project
+```
+
 ## Swagger coverage report
 
 Generating the report has two requirements that Windows does not satisfy:

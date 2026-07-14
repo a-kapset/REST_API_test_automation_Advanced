@@ -1,8 +1,11 @@
+from typing import Optional
+
+
 class Configuration:
     def __init__(
         self,
         host: str,
-        headers: dict = None,
+        headers: Optional[dict] = None,
         disable_log: bool = True,
         verify: bool = True,
     ):  # type: ignore

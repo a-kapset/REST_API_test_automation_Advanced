@@ -1,19 +1,19 @@
 import allure
 from checkers.post_v1_account_checker import PostV1AccountChecker
+from helpers.account_helper import AccountHelper
+from tests.user import User
 
 
 @allure.suite("Tests for the method POST v1/account")
 @allure.sub_suite("Positive tests")
 class TestsPostV1Account_BaseTest:
     @allure.title("Check new user registration")
-    async def test_post_v1_account_base(self, account_helper_fxt, user_data_fxt):
+    async def test_post_v1_account_base(self, account_helper_fxt: AccountHelper, user_data_fxt: User) -> None:
         login = user_data_fxt.login
         password = user_data_fxt.password
         email = user_data_fxt.email
 
-        await account_helper_fxt.register_new_user(
-            login=login, password=password, email=email
-        )
+        await account_helper_fxt.register_new_user(login=login, password=password, email=email)
         await account_helper_fxt.activate_user(login=login)
         response = await account_helper_fxt.user_login(
             login=login, password=password, remember_me=True, validate_response=True

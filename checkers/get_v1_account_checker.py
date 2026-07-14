@@ -1,5 +1,6 @@
 import allure
 from datetime import datetime
+from typing import Any
 from hamcrest import (
     assert_that,
     all_of,
@@ -16,7 +17,7 @@ from assertpy import soft_assertions, assert_that as assert_that_fluent
 
 class GetV1AccountChecker:
     @classmethod
-    def check_response_values(cls, response, **kwargs):
+    def check_response_values(cls, response: Any, **kwargs: Any) -> None:
         with allure.step("Check response values"):
             assert_that(
                 response,
@@ -45,7 +46,7 @@ class GetV1AccountChecker:
             )
 
     @classmethod
-    def check_response_values_softly(cls, response, **kwargs):
+    def check_response_values_softly(cls, response: Any, **kwargs: Any) -> None:
         with allure.step("Check response values softly"):
             with soft_assertions():
                 assert_that_fluent(response.resource.login).is_equal_to(kwargs["login"])

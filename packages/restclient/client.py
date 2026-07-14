@@ -6,6 +6,7 @@ import curlify2
 import httpx
 
 from json import JSONDecodeError
+from typing import Any
 from swagger_coverage_py.listener import URI, RequestSchemaHandler
 from packages.restclient.configuration import Configuration
 from packages.restclient.utilities import allure_attach
@@ -14,42 +15,38 @@ from packages.restclient.utilities import allure_attach
 
 
 class RestClient:
-    def __init__(self, configuration: Configuration):
+    def __init__(self, configuration: Configuration) -> None:
         self.session = httpx.AsyncClient(verify=configuration.verify)
         self.host = configuration.host
         self.set_headers(configuration.headers)
         self.disable_log = configuration.disable_log
-        self.log = structlog.get_logger(__name__).bind(
-            service="api"
-        )  # __name__ - logger will have currnet class name
+        self.log = structlog.get_logger(__name__).bind(service="api")  # __name__ - logger will have currnet class name
         # service='api' - logger is for 'api' service
         # ...
 
-    def set_headers(self, headers):
+    def set_headers(self, headers: dict | None) -> None:
         if headers:
             self.session.headers.update(headers)
 
-    async def post(self, path, **kwargs):
+    async def post(self, path: str, **kwargs: Any) -> httpx.Response:
         return await self._send_request(method="POST", path=path, **kwargs)
 
-    async def get(self, path, **kwargs):
+    async def get(self, path: str, **kwargs: Any) -> httpx.Response:
         return await self._send_request(method="GET", path=path, **kwargs)
 
-    async def put(self, path, **kwargs):
+    async def put(self, path: str, **kwargs: Any) -> httpx.Response:
         return await self._send_request(method="PUT", path=path, **kwargs)
 
-    async def delete(self, path, **kwargs):
+    async def delete(self, path: str, **kwargs: Any) -> httpx.Response:
         return await self._send_request(method="DELETE", path=path, **kwargs)
 
     @allure_attach
-    async def _send_request(self, method, path, **kwargs):
+    async def _send_request(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
         log = self.log.bind(event_id=str(uuid.uuid4()))
         full_url = self.host + path
 
         if self.disable_log:
-            rest_response = await self.session.request(
-                method=method, url=full_url, **kwargs
-            )
+            rest_response = await self.session.request(method=method, url=full_url, **kwargs)
             rest_response.raise_for_status()  # Raises HTTPError, if one occurred (status != 2xx)
 
             return rest_response
@@ -64,12 +61,8 @@ class RestClient:
             data=kwargs.get("data"),
         )
 
-        rest_response = await self.session.request(
-            method=method, url=full_url, **kwargs
-        )
-        curl = curlify2.Curlify(
-            rest_response.request
-        ).to_curl()  # Creates "curl" for performed request
+        rest_response = await self.session.request(method=method, url=full_url, **kwargs)
+        curl = curlify2.Curlify(rest_response.request).to_curl()  # Creates "curl" for performed request
         print(curl)
 
         # Record the request for swagger coverage only when enabled via the
@@ -98,7 +91,7 @@ class RestClient:
         return rest_response
 
     @staticmethod
-    def _get_json(rest_response):
+    def _get_json(rest_response: httpx.Response) -> dict:
         try:
             return rest_response.json()
         except JSONDecodeError:

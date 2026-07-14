@@ -1,4 +1,5 @@
 import allure
+from collections.abc import Iterator
 from contextlib import contextmanager
 from json import JSONDecodeError
 
@@ -16,7 +17,7 @@ from httpx import codes
 #       "expected 200, got 201/204" is not caught. Idea: yield a holder the test
 #       assigns the response to, then assert response.status_code == expected.
 @contextmanager
-def check_status_code_http(expected_status_code=codes.OK, expected_message: str = ""):
+def check_status_code_http(expected_status_code: int = codes.OK, expected_message: str = "") -> Iterator[None]:
     with allure.step("Check response values"):
         try:
             yield

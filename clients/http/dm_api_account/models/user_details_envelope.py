@@ -59,7 +59,7 @@ class UserDetails(BaseModel):
 
     @field_validator("info", mode="before")
     @classmethod
-    def _empty_info_to_none(cls, value):
+    def _empty_info_to_none(cls, value: Any) -> Any:
         # The API serializes an absent InfoBbText as an empty string rather than
         # null/object; normalize it so it matches the schema's object type.
         if value == "":
