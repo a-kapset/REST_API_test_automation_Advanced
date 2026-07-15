@@ -1,0 +1,1128 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "DM.API Account",
+        "version": "v1"
+    },
+    "paths": {
+        "/v1/account": {
+            "post": {
+                "tags": [
+                    "Account"
+                ],
+                "summary": "Register new user",
+                "operationId": "Register",
+                "parameters": [
+                    {
+                        "name": "X-Dm-Auth-Token",
+                        "in": "header",
+                        "description": "Authenticated requests require X-Dm-Auth-Token header. You can get the data from POST /account/ method, sending login and password in \"token\" response field",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Dm-Bb-Render-Mode",
+                        "in": "header",
+                        "description": "Requests with user defined texts that allows usage of BB-codes may be rendered differently by passing the X-Dm-Bb-Render-Mode header of one of following values Html, Bb, Text, SafeHtml",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "New user credentials information",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Registration"
+                            }
+                        },
+                        "text/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Registration"
+                            }
+                        },
+                        "application/*+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Registration"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User has been registered and expects confirmation by e-mail"
+                    },
+                    "400": {
+                        "description": "Some of registration properties were invalid",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestError"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestError"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "Account"
+                ],
+                "summary": "Get current user",
+                "operationId": "GetCurrent",
+                "parameters": [
+                    {
+                        "name": "X-Dm-Auth-Token",
+                        "in": "header",
+                        "description": "Authenticated requests require X-Dm-Auth-Token header. You can get the data from POST /account/ method, sending login and password in \"token\" response field",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Dm-Bb-Render-Mode",
+                        "in": "header",
+                        "description": "Requests with user defined texts that allows usage of BB-codes may be rendered differently by passing the X-Dm-Bb-Render-Mode header of one of following values Html, Bb, Text, SafeHtml",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserDetailsEnvelope"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserDetailsEnvelope"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserDetailsEnvelope"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/account/{token}": {
+            "put": {
+                "tags": [
+                    "Account"
+                ],
+                "summary": "Activate registered user",
+                "operationId": "Activate",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "description": "Activation token",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-Dm-Auth-Token",
+                        "in": "header",
+                        "description": "Authenticated requests require X-Dm-Auth-Token header. You can get the data from POST /account/ method, sending login and password in \"token\" response field",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Dm-Bb-Render-Mode",
+                        "in": "header",
+                        "description": "Requests with user defined texts that allows usage of BB-codes may be rendered differently by passing the X-Dm-Bb-Render-Mode header of one of following values Html, Bb, Text, SafeHtml",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User has been activated and logged in",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserEnvelope"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserEnvelope"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Token is invalid",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneralError"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneralError"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneralError"
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "Token is expired",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneralError"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneralError"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneralError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/account/password": {
+            "post": {
+                "tags": [
+                    "Account"
+                ],
+                "summary": "Reset registered user password",
+                "operationId": "ResetPassword",
+                "parameters": [
+                    {
+                        "name": "X-Dm-Auth-Token",
+                        "in": "header",
+                        "description": "Authenticated requests require X-Dm-Auth-Token header. You can get the data from POST /account/ method, sending login and password in \"token\" response field",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Dm-Bb-Render-Mode",
+                        "in": "header",
+                        "description": "Requests with user defined texts that allows usage of BB-codes may be rendered differently by passing the X-Dm-Bb-Render-Mode header of one of following values Html, Bb, Text, SafeHtml",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Account details",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResetPassword"
+                            }
+                        },
+                        "text/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResetPassword"
+                            }
+                        },
+                        "application/*+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResetPassword"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserEnvelope"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserEnvelope"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Some account details were incorrect",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestError"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestError"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestError"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "Password has been reset"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Account"
+                ],
+                "summary": "Change registered user password",
+                "operationId": "ChangePassword",
+                "parameters": [
+                    {
+                        "name": "X-Dm-Auth-Token",
+                        "in": "header",
+                        "description": "Authenticated requests require X-Dm-Auth-Token header. You can get the data from POST /account/ method, sending login and password in \"token\" response field",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Dm-Bb-Render-Mode",
+                        "in": "header",
+                        "description": "Requests with user defined texts that allows usage of BB-codes may be rendered differently by passing the X-Dm-Bb-Render-Mode header of one of following values Html, Bb, Text, SafeHtml",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePassword"
+                            }
+                        },
+                        "text/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePassword"
+                            }
+                        },
+                        "application/*+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangePassword"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password has been changed",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserEnvelope"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserEnvelope"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Some account details were incorrect",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestError"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestError"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/account/email": {
+            "put": {
+                "tags": [
+                    "Account"
+                ],
+                "summary": "Change registered user email",
+                "operationId": "ChangeEmail",
+                "parameters": [
+                    {
+                        "name": "X-Dm-Auth-Token",
+                        "in": "header",
+                        "description": "Authenticated requests require X-Dm-Auth-Token header. You can get the data from POST /account/ method, sending login and password in \"token\" response field",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Dm-Bb-Render-Mode",
+                        "in": "header",
+                        "description": "Requests with user defined texts that allows usage of BB-codes may be rendered differently by passing the X-Dm-Bb-Render-Mode header of one of following values Html, Bb, Text, SafeHtml",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangeEmail"
+                            }
+                        },
+                        "text/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangeEmail"
+                            }
+                        },
+                        "application/*+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangeEmail"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Email has been changed",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserEnvelope"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserEnvelope"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Some account details were incorrect",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestError"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestError"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/account/login": {
+            "post": {
+                "tags": [
+                    "Login"
+                ],
+                "summary": "Authenticate via credentials",
+                "parameters": [
+                    {
+                        "name": "X-Dm-Bb-Render-Mode",
+                        "in": "header",
+                        "description": "Requests with user defined texts that allows usage of BB-codes may be rendered differently by passing the X-Dm-Bb-Render-Mode header of one of following values Html, Bb, Text, SafeHtml",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Login credentials",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginCredentials"
+                            }
+                        },
+                        "text/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginCredentials"
+                            }
+                        },
+                        "application/*+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginCredentials"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserEnvelope"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserEnvelope"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserEnvelope"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "User not found or password is incorrect",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestError"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestError"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "User is inactive or banned",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneralError"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneralError"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneralError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Login"
+                ],
+                "summary": "Logout as current user",
+                "parameters": [
+                    {
+                        "name": "X-Dm-Auth-Token",
+                        "in": "header",
+                        "description": "Authenticated requests require X-Dm-Auth-Token header. You can get the data from POST /account/ method, sending login and password in \"token\" response field",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Dm-Bb-Render-Mode",
+                        "in": "header",
+                        "description": "Requests with user defined texts that allows usage of BB-codes may be rendered differently by passing the X-Dm-Bb-Render-Mode header of one of following values Html, Bb, Text, SafeHtml",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    },
+                    "401": {
+                        "description": "User must be authenticated",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneralError"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneralError"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneralError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/account/login/all": {
+            "delete": {
+                "tags": [
+                    "Login"
+                ],
+                "summary": "Logout from every device",
+                "parameters": [
+                    {
+                        "name": "X-Dm-Auth-Token",
+                        "in": "header",
+                        "description": "Authenticated requests require X-Dm-Auth-Token header. You can get the data from POST /account/ method, sending login and password in \"token\" response field",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Dm-Bb-Render-Mode",
+                        "in": "header",
+                        "description": "Requests with user defined texts that allows usage of BB-codes may be rendered differently by passing the X-Dm-Bb-Render-Mode header of one of following values Html, Bb, Text, SafeHtml",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    },
+                    "401": {
+                        "description": "User must be authenticated",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneralError"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneralError"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneralError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "BadRequestError": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "Client message",
+                        "nullable": true
+                    },
+                    "invalidProperties": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "description": "Key-value pairs of invalid request properties",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false,
+                "description": "Bad request error DTO"
+            },
+            "BbParseMode": {
+                "enum": [
+                    "Common",
+                    "Info",
+                    "Post",
+                    "Chat"
+                ],
+                "type": "string",
+                "description": "BB text parse mode"
+            },
+            "ChangeEmail": {
+                "type": "object",
+                "properties": {
+                    "login": {
+                        "type": "string",
+                        "description": "User login",
+                        "nullable": true
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "User password",
+                        "nullable": true
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "New user email",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false,
+                "description": "API DTO model for changing user email"
+            },
+            "ChangePassword": {
+                "type": "object",
+                "properties": {
+                    "login": {
+                        "type": "string",
+                        "description": "User login",
+                        "nullable": true
+                    },
+                    "token": {
+                        "type": "string",
+                        "description": "Password reset token",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "oldPassword": {
+                        "type": "string",
+                        "description": "Old password",
+                        "nullable": true
+                    },
+                    "newPassword": {
+                        "type": "string",
+                        "description": "New password",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false,
+                "description": "API DTO model for password changing"
+            },
+            "ColorSchema": {
+                "enum": [
+                    "Modern",
+                    "Pale",
+                    "Classic",
+                    "ClassicPale",
+                    "Night"
+                ],
+                "type": "string"
+            },
+            "GeneralError": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "Client message",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false,
+                "description": "General error DTO model"
+            },
+            "InfoBbText": {
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "type": "string",
+                        "description": "Text",
+                        "nullable": true
+                    },
+                    "parseMode": {
+                        "$ref": "#/components/schemas/BbParseMode"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "LoginCredentials": {
+                "type": "object",
+                "properties": {
+                    "login": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "password": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "rememberMe": {
+                        "type": "boolean"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "PagingSettings": {
+                "type": "object",
+                "properties": {
+                    "postsPerPage": {
+                        "type": "integer",
+                        "description": "Number of posts on a game room page",
+                        "format": "int32"
+                    },
+                    "commentsPerPage": {
+                        "type": "integer",
+                        "description": "Number of commentaries on a game or a topic page",
+                        "format": "int32"
+                    },
+                    "topicsPerPage": {
+                        "type": "integer",
+                        "description": "Number of detached topics on a forum page",
+                        "format": "int32"
+                    },
+                    "messagesPerPage": {
+                        "type": "integer",
+                        "description": "Number of private messages and conversations on dialogue page",
+                        "format": "int32"
+                    },
+                    "entitiesPerPage": {
+                        "type": "integer",
+                        "description": "Number of other entities on page",
+                        "format": "int32"
+                    }
+                },
+                "additionalProperties": false,
+                "description": "API DTO for user paging settings"
+            },
+            "Rating": {
+                "type": "object",
+                "properties": {
+                    "enabled": {
+                        "type": "boolean",
+                        "description": "Rating participation flag"
+                    },
+                    "quality": {
+                        "type": "integer",
+                        "description": "Quality rating",
+                        "format": "int32"
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "description": "Quantity rating",
+                        "format": "int32"
+                    }
+                },
+                "additionalProperties": false,
+                "description": "DTO model for user rating"
+            },
+            "Registration": {
+                "type": "object",
+                "properties": {
+                    "login": {
+                        "type": "string",
+                        "description": "Login",
+                        "nullable": true
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Email",
+                        "nullable": true
+                    },
+                    "password": {
+                        "type": "string",
+                        "description": "Password",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false,
+                "description": "DTO model for user registration"
+            },
+            "ResetPassword": {
+                "type": "object",
+                "properties": {
+                    "login": {
+                        "type": "string",
+                        "description": "Login",
+                        "nullable": true
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Email",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false,
+                "description": "DTO model for user password reseting"
+            },
+            "User": {
+                "type": "object",
+                "properties": {
+                    "login": {
+                        "type": "string",
+                        "description": "Login",
+                        "nullable": true
+                    },
+                    "roles": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/UserRole"
+                        },
+                        "description": "Roles",
+                        "nullable": true
+                    },
+                    "mediumPictureUrl": {
+                        "type": "string",
+                        "description": "Profile picture URL M-size",
+                        "nullable": true
+                    },
+                    "smallPictureUrl": {
+                        "type": "string",
+                        "description": "Profile picture URL S-size",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "User defined status",
+                        "nullable": true
+                    },
+                    "rating": {
+                        "$ref": "#/components/schemas/Rating"
+                    },
+                    "online": {
+                        "type": "string",
+                        "description": "Last seen online moment",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "User real name",
+                        "nullable": true
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "User real location",
+                        "nullable": true
+                    },
+                    "registration": {
+                        "type": "string",
+                        "description": "User registration moment",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false,
+                "description": "DTO model for user"
+            },
+            "UserDetails": {
+                "type": "object",
+                "properties": {
+                    "login": {
+                        "type": "string",
+                        "description": "Login",
+                        "nullable": true
+                    },
+                    "roles": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/UserRole"
+                        },
+                        "description": "Roles",
+                        "nullable": true
+                    },
+                    "mediumPictureUrl": {
+                        "type": "string",
+                        "description": "Profile picture URL M-size",
+                        "nullable": true
+                    },
+                    "smallPictureUrl": {
+                        "type": "string",
+                        "description": "Profile picture URL S-size",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "User defined status",
+                        "nullable": true
+                    },
+                    "rating": {
+                        "$ref": "#/components/schemas/Rating"
+                    },
+                    "online": {
+                        "type": "string",
+                        "description": "Last seen online moment",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "User real name",
+                        "nullable": true
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "User real location",
+                        "nullable": true
+                    },
+                    "registration": {
+                        "type": "string",
+                        "description": "User registration moment",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "icq": {
+                        "type": "string",
+                        "description": "User ICQ number",
+                        "nullable": true
+                    },
+                    "skype": {
+                        "type": "string",
+                        "description": "User Skype login",
+                        "nullable": true
+                    },
+                    "originalPictureUrl": {
+                        "type": "string",
+                        "description": "URL of profile picture original",
+                        "nullable": true
+                    },
+                    "info": {
+                        "$ref": "#/components/schemas/InfoBbText"
+                    },
+                    "settings": {
+                        "$ref": "#/components/schemas/UserSettings"
+                    }
+                },
+                "additionalProperties": false,
+                "description": "DTO model for user details"
+            },
+            "UserDetailsEnvelope": {
+                "type": "object",
+                "properties": {
+                    "resource": {
+                        "$ref": "#/components/schemas/UserDetails"
+                    },
+                    "metadata": {
+                        "description": "Additional metadata",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false,
+                "description": "Enveloped DTO model"
+            },
+            "UserEnvelope": {
+                "type": "object",
+                "properties": {
+                    "resource": {
+                        "$ref": "#/components/schemas/User"
+                    },
+                    "metadata": {
+                        "description": "Additional metadata",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false,
+                "description": "Enveloped DTO model"
+            },
+            "UserRole": {
+                "enum": [
+                    "Guest",
+                    "Player",
+                    "Administrator",
+                    "NannyModerator",
+                    "RegularModerator",
+                    "SeniorModerator"
+                ],
+                "type": "string"
+            },
+            "UserSettings": {
+                "type": "object",
+                "properties": {
+                    "colorSchema": {
+                        "$ref": "#/components/schemas/ColorSchema"
+                    },
+                    "nannyGreetingsMessage": {
+                        "type": "string",
+                        "description": "Message that user's newbies will receive once they are connected",
+                        "nullable": true
+                    },
+                    "paging": {
+                        "$ref": "#/components/schemas/PagingSettings"
+                    }
+                },
+                "additionalProperties": false,
+                "description": ""
+            }
+        }
+    }
+}
