@@ -74,6 +74,23 @@ poetry run pytest tests
 Swagger coverage recording is **off by default**, so the suite runs anywhere,
 including Windows.
 
+## Linting and formatting (Ruff)
+
+[Ruff](https://docs.astral.sh/ruff/) is used for linting and formatting. It is
+installed in the `lint` dependency group inside Poetry's virtualenv, so it is
+**not** on your global `PATH` — calling `ruff` directly fails with
+`command not found` (or `The term 'ruff' is not recognized` on PowerShell).
+Run it through Poetry instead:
+
+```bash
+poetry run ruff format .   # format all files (like Black)
+poetry run ruff check .    # run the linter
+```
+
+> To drop the `poetry run` prefix, activate the environment first with
+> `poetry env activate` (Poetry 2.x) and paste the printed command into your
+> shell; `ruff` then works directly for that session.
+
 ## Swagger coverage report
 
 Generating the report has two requirements that Windows does not satisfy:
