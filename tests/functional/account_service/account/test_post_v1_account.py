@@ -1,13 +1,17 @@
+from collections.abc import Callable
+
 import allure
 import pytest
 from checkers.http_checkers import check_status_code_http
+from helpers.account_helper import AccountHelper
+from tests.user import User
 
 
 @allure.suite("Tests for the method POST v1/account")
 @allure.sub_suite("Positive tests")
 class TestsPostV1AccountPositive:
     @allure.title("Register a new user")
-    async def test_post_v1_account(self, account_helper_fxt, user_data_fxt):
+    async def test_post_v1_account(self, account_helper_fxt: AccountHelper, user_data_fxt: User) -> None:
         with check_status_code_http(expected_status_code=200):
             await account_helper_fxt.register_new_user(
                 login=user_data_fxt.login,
@@ -30,8 +34,12 @@ class TestsPostV1AccountNegative:
         ],
     )
     async def test_post_v1_account_invalid_creds(
-        self, account_helper_fxt, user_data_fxt, field, transformer
-    ):
+        self,
+        account_helper_fxt: AccountHelper,
+        user_data_fxt: User,
+        field: str,
+        transformer: Callable[[str], str],
+    ) -> None:
         credentials = {
             "login": user_data_fxt.login,
             "password": user_data_fxt.password,
@@ -40,7 +48,5 @@ class TestsPostV1AccountNegative:
 
         credentials[field] = transformer(credentials[field])
 
-        with check_status_code_http(
-            expected_status_code=400, expected_message="Validation failed"
-        ):
+        with check_status_code_http(expected_status_code=400, expected_message="Validation failed"):
             await account_helper_fxt.register_new_user(**credentials)

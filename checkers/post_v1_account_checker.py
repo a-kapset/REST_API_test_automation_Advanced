@@ -1,5 +1,6 @@
 import allure
 from datetime import datetime
+from typing import Any
 from hamcrest import (
     assert_that,
     has_property,
@@ -13,7 +14,7 @@ from hamcrest import (
 
 class PostV1AccountChecker:
     @classmethod
-    def check_response_values(cls, response, **kwargs):
+    def check_response_values(cls, response: Any, **kwargs: Any) -> None:
         with allure.step("Check response values"):
             today = datetime.now().strftime("%Y-%m-%d")
             assert_that(str(response.resource.registration), starts_with(today))
@@ -25,18 +26,14 @@ class PostV1AccountChecker:
                         "resource",
                         has_property("login", starts_with(kwargs["login_starts_with"])),
                     ),
-                    has_property(
-                        "resource", has_property("registration", instance_of(datetime))
-                    ),
+                    has_property("resource", has_property("registration", instance_of(datetime))),
                     has_property(
                         "resource",
                         has_properties(
                             {
                                 "rating": has_properties(
                                     {
-                                        "enabled": equal_to(
-                                            kwargs["rating_is_enabled"]
-                                        ),
+                                        "enabled": equal_to(kwargs["rating_is_enabled"]),
                                         "quality": equal_to(kwargs["rating_quality"]),
                                         "quantity": equal_to(kwargs["rating_quantity"]),
                                     }

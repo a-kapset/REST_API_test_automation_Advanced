@@ -60,5 +60,6 @@ line-length = 120
 
 [dependency-groups]
 lint = [
-    "ruff (>=0.15.21,<0.16.0)"
+    "ruff (>=0.15.21,<0.16.0)",
+    "mypy (>=2.3.0,<3.0.0)"
 ]
