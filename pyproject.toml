@@ -33,7 +33,8 @@ dependencies = [
     "six (==1.17.0)",
     "httpx (>=0.28.1,<0.29.0)",
     "pytest-asyncio (>=1.4.0,<2.0.0)",
-    "curlify2 (>=2.0.0,<3.0.0)"
+    "curlify2 (>=2.0.0,<3.0.0)",
+    "rest-client @ git+https://github.com/SDET-org/rest_client.git@main"
 ]
 
 
