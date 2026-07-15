@@ -1,8 +1,11 @@
+import asyncio
 import os
 import structlog
 import uuid
-import curlify
-from requests import JSONDecodeError, session
+import curlify2
+import httpx
+
+from json import JSONDecodeError
 from swagger_coverage_py.listener import URI, RequestSchemaHandler
 from packages.restclient.configuration import Configuration
 from packages.restclient.utilities import allure_attach
@@ -11,8 +14,8 @@ from packages.restclient.utilities import allure_attach
 
 class RestClient:
     def __init__(self, configuration: Configuration):
-        self.session = session()
-        self.host = configuration.host        
+        self.session = httpx.AsyncClient(verify=configuration.verify)
+        self.host = configuration.host
         self.set_headers(configuration.headers)
         self.disable_log = configuration.disable_log        
         self.log = structlog.get_logger(__name__).bind(service='api')   # __name__ - logger will have currnet class name
@@ -24,25 +27,25 @@ class RestClient:
         if headers:
             self.session.headers.update(headers)
 
-    def post(self, path, **kwargs):
-        return self._send_request(method='POST', path=path, **kwargs)
+    async def post(self, path, **kwargs):
+        return await self._send_request(method='POST', path=path, **kwargs)
     
-    def get(self, path, **kwargs):
-        return self._send_request(method='GET', path=path, **kwargs)
+    async def get(self, path, **kwargs):
+        return await self._send_request(method='GET', path=path, **kwargs)
     
-    def put(self, path, **kwargs):
-        return self._send_request(method='PUT', path=path, **kwargs)
+    async def put(self, path, **kwargs):
+        return await self._send_request(method='PUT', path=path, **kwargs)
     
-    def delete(self, path, **kwargs):
-        return self._send_request(method='DELETE', path=path, **kwargs)
+    async def delete(self, path, **kwargs):
+        return await self._send_request(method='DELETE', path=path, **kwargs)
     
     @allure_attach 
-    def _send_request(self, method, path, **kwargs):
+    async def _send_request(self, method, path, **kwargs):
         log = self.log.bind(event_id=str(uuid.uuid4()))
         full_url = self.host + path
 
         if self.disable_log:
-            rest_response = self.session.request(method=method, url=full_url, **kwargs)
+            rest_response = await self.session.request(method=method, url=full_url, **kwargs)
             rest_response.raise_for_status() # Raises HTTPError, if one occurred (status != 2xx)
             
             return rest_response          
@@ -57,8 +60,8 @@ class RestClient:
             data=kwargs.get('data')
         )
         
-        rest_response = self.session.request(method=method, url=full_url, **kwargs)
-        curl = curlify.to_curl(rest_response.request) # Creates "curl" for performed request
+        rest_response = await self.session.request(method=method, url=full_url, **kwargs)
+        curl = curlify2.Curlify(rest_response.request).to_curl() # Creates "curl" for performed request
         print(curl)
         
         # Record the request for swagger coverage only when enabled via the
@@ -67,7 +70,8 @@ class RestClient:
         # on Windows because ":" is illegal in paths — so keep it off by default.
         if os.environ.get('SWAGGER_COVERAGE_ENABLED') == '1':
             uri = URI(host=self.host, base_path="", unformatted_path=path, uri_params=kwargs.get('params'))
-            RequestSchemaHandler(uri, method.lower(), rest_response, kwargs).write_schema()
+            handler = RequestSchemaHandler(uri, method.lower(), rest_response, kwargs)
+            await asyncio.to_thread(handler.write_schema)
         
         log.msg(
             event="Response",

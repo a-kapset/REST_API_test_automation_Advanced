@@ -8,7 +8,7 @@ from packages.restclient.client import RestClient
 
 class LoginApi(RestClient):
     @allure.step("Send POST request to /v1/account/login (Login API)")            
-    def post_v1_account_login(self, login_credentials: LoginCredentials, validate_response=True):
+    async def post_v1_account_login(self, login_credentials: LoginCredentials, validate_response=True):
         """
         Authenticate via credentials
 
@@ -19,7 +19,7 @@ class LoginApi(RestClient):
             _type_: Response
         """
 
-        response = self.post(
+        response = await self.post(
             path="/v1/account/login",
             json=login_credentials.model_dump(exclude_none=True, by_alias=True)
         )
@@ -43,7 +43,7 @@ class LoginApi(RestClient):
         return response
     
     @allure.step("Send DELETE request to /v1/account/login (Login API)")            
-    def delete_v1_account_login(self, **kwargs):
+    async def delete_v1_account_login(self, **kwargs):
         """
         Logout as current user
 
@@ -51,7 +51,7 @@ class LoginApi(RestClient):
             _type_: Response
         """
 
-        response = self.delete(
+        response = await self.delete(
             path="/v1/account/login",
             **kwargs
         )
@@ -59,7 +59,7 @@ class LoginApi(RestClient):
         return response
     
     @allure.step("Send DELETE request to /v1/account/login/all (Login API)")            
-    def delete_v1_account_login_all(self, **kwargs):
+    async def delete_v1_account_login_all(self, **kwargs):
         """
         Logout from every device
 
@@ -67,7 +67,7 @@ class LoginApi(RestClient):
             _type_: Response
         """
 
-        response = self.delete(
+        response = await self.delete(
             path="/v1/account/login/all",
             **kwargs
         )

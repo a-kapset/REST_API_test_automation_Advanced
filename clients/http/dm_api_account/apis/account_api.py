@@ -11,7 +11,7 @@ from packages.restclient.client import RestClient
 class AccountApi(RestClient):
 
     @allure.step("Send POST request to /v1/account (Account API)")
-    def post_v1_account(self, registration: Registration):
+    async def post_v1_account(self, registration: Registration):
         """
         Register new user
 
@@ -22,7 +22,7 @@ class AccountApi(RestClient):
             _type_: Response
         """
 
-        response = self.post(
+        response = await self.post(
             path="/v1/account",
             json=registration.model_dump(exclude_none=True, by_alias=True)
         )
@@ -30,7 +30,7 @@ class AccountApi(RestClient):
         return response
 
     @allure.step("Send PUT request to /v1/account/[token] (Account API)")
-    def put_v1_account_token(self, token, validate_response=True):
+    async def put_v1_account_token(self, token, validate_response=True):
         """
         Activate registered user
 
@@ -45,7 +45,7 @@ class AccountApi(RestClient):
             "accept": "text/plain"
         }
 
-        response = self.put(
+        response = await self.put(
             path=f"/v1/account/{token}",
             headers=headers
         )
@@ -56,7 +56,7 @@ class AccountApi(RestClient):
         return response
 
     @allure.step("Send PUT request to /v1/account/email (Account API)")
-    def put_v1_account_email(self, change_email: ChangeEmail, validate_response=True):
+    async def put_v1_account_email(self, change_email: ChangeEmail, validate_response=True):
         """
         Change registered user email
 
@@ -67,7 +67,7 @@ class AccountApi(RestClient):
             _type_: Response
         """
 
-        response = self.put(
+        response = await self.put(
             path="/v1/account/email",
             json=change_email.model_dump(exclude_none=True, by_alias=True)
         )
@@ -78,7 +78,7 @@ class AccountApi(RestClient):
         return response
 
     @allure.step("Send GET request to /v1/account (Account API)")
-    def get_v1_account(self, validate_response=True, **kwargs):
+    async def get_v1_account(self, validate_response=True, **kwargs):
         """
         Get current user
 
@@ -89,7 +89,7 @@ class AccountApi(RestClient):
             _type_: Response
         """
 
-        response = self.get(
+        response = await self.get(
             path="/v1/account",
             **kwargs
         )
@@ -108,7 +108,7 @@ class AccountApi(RestClient):
         return response
 
     @allure.step("Send POST request to /v1/account/password (Account API)")
-    def post_v1_account_password(self, reset_password: ResetPassword, validate_response=True):
+    async def post_v1_account_password(self, reset_password: ResetPassword, validate_response=True):
         """
         Reset registered user password
 
@@ -119,7 +119,7 @@ class AccountApi(RestClient):
             _type_: Response
         """
 
-        response = self.post(
+        response = await self.post(
             path="/v1/account/password",
             json=reset_password.model_dump(exclude_none=True, by_alias=True)
         )
@@ -130,7 +130,7 @@ class AccountApi(RestClient):
         return response
 
     @allure.step("Send PUT request to /v1/account/password (Account API)")
-    def put_v1_account_password(self, change_password: ChangePassword, validate_response=True):
+    async def put_v1_account_password(self, change_password: ChangePassword, validate_response=True):
         """
         Change registered user password
 
@@ -141,7 +141,7 @@ class AccountApi(RestClient):
             _type_: Response
         """
 
-        response = self.put(
+        response = await self.put(
             path="/v1/account/password",
             json=change_password.model_dump(exclude_none=True, by_alias=True)
         )

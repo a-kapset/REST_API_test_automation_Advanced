@@ -12,6 +12,9 @@ from packages.restclient.configuration import Configuration
 from services.dm_api_account import DmApiAccount
 from services.api_mailhog import MailHogApi
 
+
+load_dotenv() # Load .env values into the environment at import time.
+
 structlog.configure(
     processors=[
         structlog.processors.JSONRenderer(indent=4, ensure_ascii=True, sort_keys=True)
@@ -45,12 +48,11 @@ def set_config(request):
     v.read_in_config()
     
     for option in options:
-        v.set(f"{option}", request.config.getoption(f"--{option}"))    
-    
-    # Uncomment to use telegram notifications
-    # load_dotenv() # loads Telegram secret credentials
-    # request.config.stash['telegram-notifier-addfields']['environment'] = config_name
-    # request.config.stash['telegram-notifier-addfields']['report'] = 'https://a-kapset.github.io/REST_API_test_automation_Advanced/'
+        v.set(f"{option}", request.config.getoption(f"--{option}"))
+
+    if request.config.getoption('telegram_notifier', default=False):
+        request.config.stash['telegram-notifier-addfields']['environment'] = config_name
+        request.config.stash['telegram-notifier-addfields']['report'] = 'https://a-kapset.github.io/REST_API_test_automation_Advanced/'
     
 
 def pytest_addoption(parser):
@@ -163,7 +165,7 @@ def user_data_fxt():
 
 
 @pytest.fixture
-def account_helper_auth_existing_fxt(mailhog_api_fxt):
+async def account_helper_auth_existing_fxt(mailhog_api_fxt):
     """
     Returns an AccountHelper authenticated as a pre-existing user.
 
@@ -176,13 +178,13 @@ def account_helper_auth_existing_fxt(mailhog_api_fxt):
     dm_api_configuration = Configuration(host=v.get('service.dm_api_account'), disable_log=False)
     account_api_client = DmApiAccount(dm_api_configuration)
     account_helper = AccountHelper(dm_account_api=account_api_client, mailhog_api=mailhog_api_fxt)
-    account_helper.authenticate_client(login=v.get('user.login'), password=v.get('user.password'))
+    await account_helper.authenticate_client(login=v.get('user.login'), password=v.get('user.password'))
 
     return account_helper
 
 
 @pytest.fixture()
-def account_helper_auth_new_fxt(mailhog_api_fxt, user_data_fxt):
+async def account_helper_auth_new_fxt(mailhog_api_fxt, user_data_fxt):
     """
     Returns an AccountHelper authenticated as a fresh, per-test user.
 
@@ -197,14 +199,14 @@ def account_helper_auth_new_fxt(mailhog_api_fxt, user_data_fxt):
     login = user_data_fxt.login
     password = user_data_fxt.password
     email = user_data_fxt.email
-    
+
     dm_api_configuration = Configuration(host=v.get('service.dm_api_account'), disable_log=False)
     account_api_client = DmApiAccount(dm_api_configuration)
     account_helper = AccountHelper(dm_account_api=account_api_client, mailhog_api=mailhog_api_fxt)
-    
-    account_helper.register_new_user(login=login, password=password, email=email)
-    account_helper.activate_user(login=login)
-    account_helper.authenticate_client(login=login, password=password)
+
+    await account_helper.register_new_user(login=login, password=password, email=email)
+    await account_helper.activate_user(login=login)
+    await account_helper.authenticate_client(login=login, password=password)
 
     # TODO: remove this user after tests?
 
