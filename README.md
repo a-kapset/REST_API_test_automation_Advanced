@@ -8,6 +8,17 @@ read activation and password-reset emails).
 
 > This repository is the advanced part of a REST API test automation course.
 
+> ⚠️ **This branch (`version_before_restcodegen`) is a reference snapshot of the
+> project *before* the [restcodegen](https://github.com/ValeriyMenshikov/restcodegen)
+> code generator was introduced.** Here the account API clients (`AccountApi`,
+> `LoginApi`) are **hand-written** on top of the external
+> [`restclient`](https://github.com/SDET-org/rest_client) package, and the pydantic
+> models live in **one file per model** under
+> [`clients/http/dm_api_account/models/`](clients/http/dm_api_account/models/). The
+> restcodegen-based version — where those clients and models are **generated** from
+> the swagger — is developed on the `prof_ch4_datamodel0_code_generator` branch.
+> Keep this branch as-is; it is not meant to receive the restcodegen migration.
+
 ## Contents
 
 - [Overview](#overview)
