@@ -14,8 +14,7 @@ from hamcrest import (
     not_none,
 )
 
-from clients.http.dm_api_account.models.user_details_envelope import UserDetailsEnvelope
-from clients.http.dm_api_account.models.user_envelope import UserRole
+from clients.http.dm_api_account.models.api_models import UserDetailsEnvelope, UserRole
 
 
 class GetV1AccountChecker:

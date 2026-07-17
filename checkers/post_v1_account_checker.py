@@ -11,7 +11,7 @@ from hamcrest import (
     starts_with,
 )
 
-from clients.http.dm_api_account.models.user_envelope import UserEnvelope
+from clients.http.dm_api_account.models.api_models import UserEnvelope
 
 
 class PostV1AccountChecker:

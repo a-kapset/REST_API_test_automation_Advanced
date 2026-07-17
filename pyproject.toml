@@ -34,7 +34,8 @@ dependencies = [
     "httpx (>=0.28.1,<0.29.0)",
     "pytest-asyncio (>=1.4.0,<2.0.0)",
     "curlify2 (>=2.0.0,<3.0.0)",
-    "rest-client @ git+https://github.com/SDET-org/rest_client.git@main"
+    "rest-client @ git+https://github.com/SDET-org/rest_client.git@main",
+    "restcodegen (>=2.0.1,<3.0.0)"
 ]
 
 
@@ -72,6 +73,15 @@ select = ["E", "F", "I", "UP", "ANN", "B", "SIM"]
 [tool.ruff.lint.per-file-ignores]
 # Test functions return None by definition; annotating every one adds noise.
 "tests/**" = ["ANN201"]
+# restcodegen output is regenerated verbatim from codegen_templates/ on every run
+# (see the regeneration procedure in README.md), so hand-fixing it is pointless —
+# the fixes are overwritten. Ignore the codes the generator reproduces:
+#   ANN401 - the `**kwargs: Any` httpx passthrough on every client method
+#   UP009  - the `# coding: utf-8` header restcodegen emits
+#   I001   - the generator's import order (not isort-sorted)
+"clients/http/dm_api_account/**" = ["ANN401", "UP009", "I001"]
+# restcodegen also (re)writes this package __init__ with the utf-8 header.
+"clients/http/__init__.py" = ["UP009"]
 
 [tool.mypy]
 # Lives here rather than in mypy.ini so ruff and mypy share one config file.

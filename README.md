@@ -45,7 +45,8 @@ read activation and password-reset emails).
 |------|--------|
 | Language | Python `>=3.13` (dev/CI run **3.14**) |
 | Dependency manager | **Poetry** (`package-mode = false`) |
-| HTTP client | **httpx** (`AsyncClient`) |
+| HTTP client | **httpx** (async), via the external **`restclient`** package's `RestClient` |
+| Client generation | **restcodegen** (generates the account service's models + API clients from swagger, using a customized template in `codegen_templates/`) |
 | Test runner | **pytest** + **pytest-asyncio** (`asyncio_mode = auto`) |
 | Models / validation | **pydantic v2** (`extra="forbid"`, camelCase aliases) |
 | Assertions | **PyHamcrest** + **assertpy** (soft assertions) |
@@ -64,9 +65,13 @@ The authoritative dependency list is [`pyproject.toml`](pyproject.toml) (pinned 
 
 ```
 clients/http/            Low-level API clients (transport + typed methods)
-  dm_api_account/apis/     AccountApi, LoginApi
-  dm_api_account/models/   pydantic request/response DTOs
-  api_mailhog/apis/        MailhogApi (read emails)
+  dm_api_account/          restcodegen-generated from the account swagger
+    apis/                    AccountApi, LoginApi (generated; ride on RestClient)
+    models/api_models.py     pydantic request/response DTOs (generated)
+  api_mailhog/apis/        MailhogApi (read emails) — uses external RestClient
+  schemas/                 OpenAPI schema snapshot restcodegen generated from
+codegen_templates/       Customized restcodegen templates — generate clients that
+                         speak RestClient's path=/json= dialect (no wrapper needed)
 services/                Facades grouping clients per service (DmApiAccount, MailHogApi)
 helpers/                 AccountHelper — multi-step business flows + retrier decorator
 checkers/                Reusable response assertions (status code, hamcrest, assertpy)
@@ -82,39 +87,77 @@ swagger/                 OpenAPI 3.0.1 contract for the account service
 
 ## Architecture
 
-Requests flow through cleanly separated layers, each with one responsibility:
+Requests flow through cleanly separated layers, each with one responsibility.
+Both the **account** and **MailHog** clients ride on the external `RestClient`:
 
 ```
 Test → Checker (assert)          Test → AccountHelper (business flow)
                                           │
                                           ▼
-                                 DmApiAccount / MailHogApi     ← service facades
-                                          │
-                                          ▼
-                          AccountApi / LoginApi / MailhogApi   ← typed API clients
-                                          │  (subclass)
-                                          ▼
-                                      RestClient               ← httpx transport
+                                 DmApiAccount            MailHogApi   ← service facades
+                                          │                   │
+                                          ▼                   ▼
+                        AccountApi / LoginApi (generated)   MailhogApi
+                                          │                   │  (subclass)
+                                          └────────┬──────────┘
+                                                   ▼
+                                              RestClient          ← transport (external pkg,
+                                             (external pkg)         wraps httpx.AsyncClient)
 ```
 
+- **restcodegen** generates, from `clients/http/schemas/dm_api_account.json`, the
+  account service's pydantic models (`models/api_models.py`) and its typed API
+  clients (`AccountApi`, `LoginApi`) — one method per endpoint, parsing success
+  responses with `model_validate_json`. The clients are generated from a
+  **customized template** (`codegen_templates/`) so they speak the `restclient`
+  package's `RestClient` dialect natively: each method calls
+  `self.api_client.post(path=..., json=model.model_dump(mode="json", by_alias=True,
+  exclude_none=True))` and types its `api_client` argument as `RestClient`. Because
+  the generated code already targets `RestClient`, **no runtime wrapper is needed**
+  — see [Regenerating the account client](#regenerating-the-account-client).
 - **`RestClient`** (external [`restclient`](https://github.com/SDET-org/rest_client)
-  package) wraps `httpx.AsyncClient` and centralizes logging, curl generation,
-  Allure attachments, optional swagger-coverage recording, and `raise_for_status()`.
-- **API clients** (`AccountApi`, `LoginApi`, `MailhogApi`) subclass `RestClient`
-  and expose one typed method per endpoint, serializing pydantic request models
-  and (optionally) validating responses into pydantic models.
+  package) is the single transport for every client. It wraps `httpx.AsyncClient`
+  and centralizes logging, curl generation, Allure attachments, `set_headers()`
+  for the auth token, and `raise_for_status()` (so non-2xx surfaces as
+  `httpx.HTTPStatusError`, which the checkers catch).
 - **Service facades** (`DmApiAccount`, `MailHogApi`) group the clients of one
-  service behind a single object sharing one `Configuration`.
+  service behind a single object sharing one `Configuration`. `DmApiAccount` builds
+  one `RestClient` and hands it to both `AccountApi` and `LoginApi`, so the auth
+  header set once (via `set_headers`) applies to both.
 - **`AccountHelper`** composes multi-step business flows (register → activate →
-  login, change password via emailed token, authenticate, …).
+  login, change password via emailed token, authenticate, …). Its
+  `validate_response` flag selects, via `@overload`, between the generated parsing
+  method (returns a pydantic envelope) and its `*_with_http_info` twin (returns the
+  raw `httpx.Response`).
 - **Checkers** hold reusable assertions; **tests** orchestrate fixtures + helpers
   + checkers and contain no transport logic.
 
-**To add an endpoint:** define pydantic model(s) → add a client method
-(`@allure.step`, `model_dump(by_alias=True, exclude_none=True)`) → add an
-`AccountHelper` flow if it is multi-step → add a checker → add a test. Response
-validation is dispatched by **status code** (see `AccountApi.get_v1_account` and
-`LoginApi.post_v1_account_login`), so error bodies are validated too, not just 2xx.
+### Regenerating the account client
+
+The generated clients are committed, so **regeneration is a local dev step, never
+run in CI** — CI installs dependencies and runs ruff/mypy/pytest against the
+committed code only; it never invokes the generator. The customized template lives
+in `codegen_templates/` (committed).
+
+To add / update account endpoints:
+
+1. Regenerate from the live swagger **with the custom template**:
+
+   ```bash
+   poetry run restcodegen generate -u "http://185.185.143.231:5051/swagger/Account/swagger.json" -s dm_api_account -a -td codegen_templates
+   ```
+
+2. Re-apply the one manual patch the generator does not emit: the empty-string-
+   `info` `field_validator` on `UserDetails` in `models/api_models.py` (the API
+   returns `info` as `""` rather than null; see `api-notes.md`).
+3. Run `poetry run ruff format .` and add an `AccountHelper` flow / checker / test
+   as needed.
+
+`codegen_templates/api_client.jinja2` is what makes the generated code call
+`RestClient` via `path=`/`json=` and type `api_client: RestClient` — which is why
+the account clients need no runtime wrapper on top of the `restclient` package.
+`restcodegen generate --templates-dir` replaces the whole template directory, so
+all three default templates are copied in and only `api_client.jinja2` is edited.
 
 ## Getting started (Poetry)
 

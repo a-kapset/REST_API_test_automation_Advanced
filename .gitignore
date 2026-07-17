@@ -74,7 +74,6 @@ tg_bot_creds.txt
 # LLM
 .claude/
 api-notes.md
-project-inventory.md
 CLAUDE.md
 
 .books/
