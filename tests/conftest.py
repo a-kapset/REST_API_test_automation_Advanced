@@ -1,18 +1,19 @@
 import os
 import time
-import pytest
-import structlog
 from collections.abc import Iterator
 from pathlib import Path
-from vyper import v
-from dotenv import load_dotenv
-from swagger_coverage_py.reporter import CoverageReporter
-from helpers.account_helper import AccountHelper
-from restclient.configuration import Configuration
-from services.dm_api_account import DmApiAccount
-from services.api_mailhog import MailHogApi
-from tests.user import User
 
+import pytest
+import structlog
+from dotenv import load_dotenv
+from restclient.configuration import Configuration
+from swagger_coverage_py.reporter import CoverageReporter
+from vyper import v
+
+from helpers.account_helper import AccountHelper
+from services.api_mailhog import MailHogApi
+from services.dm_api_account import DmApiAccount
+from tests.user import User
 
 load_dotenv()  # Load .env values into the environment at import time.
 

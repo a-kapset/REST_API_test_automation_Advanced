@@ -1,4 +1,5 @@
 import allure
+
 from helpers.account_helper import AccountHelper
 from tests.user import User
 

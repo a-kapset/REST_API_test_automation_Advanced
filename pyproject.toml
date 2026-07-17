@@ -57,10 +57,74 @@ addopts = "--alluredir=allure-results"
 
 [tool.ruff]
 line-length = 120
-# extend-exclude = [] # folders to exclude from formatting 
+# extend-exclude = [] # folders to exclude from formatting
+
+[tool.ruff.lint]
+# Beyond ruff's defaults (E4/E7/E9/F):
+#   I    - import sorting
+#   UP   - pyupgrade: keeps annotations on modern syntax (list[x], x | None)
+#   ANN  - flake8-annotations: requires annotations, and ANN401 bans bare `Any`
+#          in signatures. ANN401 is the rule that stops `-> Any` from being an
+#          easy way to silence the type checker.
+#   B    - bugbear, SIM - simplify: common correctness/readability traps
+select = ["E", "F", "I", "UP", "ANN", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# Test functions return None by definition; annotating every one adds noise.
+"tests/**" = ["ANN201"]
+
+[tool.mypy]
+# Lives here rather than in mypy.ini so ruff and mypy share one config file.
+python_version = "3.13"
+files = ["."]
+exclude = ["\\.venv"]
+
+# --- Baseline: every function must be annotated, and bodies are checked ---
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+
+# --- The flags that make the annotations mean something ---
+# Without these, mypy accepts `-> Any` and bare `dict` and reports success, so
+# `Any` becomes the path of least resistance to a green build.
+warn_return_any = true         # catches Any leaking out through a declared type
+disallow_any_generics = true   # bare `dict` / `Callable` are implicitly Any-parameterised
+warn_unused_ignores = true     # a `# type: ignore` that suppresses nothing is an error
+warn_redundant_casts = true
+no_implicit_optional = true
+strict_equality = true
+warn_unreachable = true
+
+# Not enabled: disallow_untyped_calls / disallow_untyped_decorators.
+# allure ships a py.typed marker but its own functions carry no annotations, so
+# every @allure.step / @allure.title would error with no fix available on our
+# side. These flags apply per calling module, so they cannot be scoped to allure
+# alone. Revisit if allure ever annotates its API.
+
+# Only these are genuinely missing stubs. Listing them explicitly instead of a
+# global ignore_missing_imports keeps a typo in any other import an error.
+[[tool.mypy.overrides]]
+module = ["vyper.*", "curlify2.*", "swagger_coverage_py.*", "assertpy.*"]
+ignore_missing_imports = true
+
+# rest-client is now an external package (git dependency) and ships no py.typed
+# marker, so mypy would treat it as Any and every client method call would leak
+# Any out through a declared return type (warn_return_any). Its source *is* fully
+# annotated, so follow_untyped_imports makes mypy read those real annotations
+# instead — restoring the same guarantees the in-repo client used to give.
+[[tool.mypy.overrides]]
+module = ["restclient.*"]
+follow_untyped_imports = true
+
+[[tool.mypy.overrides]]
+# pyhamcrest's stubs declare all_of/has_property as Matcher[Never], which makes
+# correct matcher usage fail with arg-type. A stub defect, not a code defect.
+module = ["checkers.*"]
+disable_error_code = ["arg-type"]
 
 [dependency-groups]
 lint = [
     "ruff (>=0.15.21,<0.16.0)",
-    "mypy (>=2.3.0,<3.0.0)"
+    "mypy (>=2.3.0,<3.0.0)",
+    "pre-commit (>=4.6.0,<5.0.0)"
 ]

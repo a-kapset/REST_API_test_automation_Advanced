@@ -1,19 +1,21 @@
 from __future__ import annotations
+
 from datetime import datetime
-from enum import Enum
-from typing import Any, List, Optional
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from enum import StrEnum
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
 from clients.http.dm_api_account.models.user_envelope import Rating, UserRole
 
 
-class BbParseMode(str, Enum):
+class BbParseMode(StrEnum):
     COMMON = "Common"
     INFO = "Info"
     POST = "Post"
     CHAT = "Chat"
 
 
-class ColorSchema(str, Enum):
+class ColorSchema(StrEnum):
     MODERN = "Modern"
     PALE = "Pale"
     CLASSIC = "Classic"
@@ -22,46 +24,50 @@ class ColorSchema(str, Enum):
 
 
 class InfoBbText(BaseModel):
-    value: Optional[str] = None
-    parse_mode: Optional[BbParseMode] = Field(None, alias="parseMode")
+    value: str | None = None
+    parse_mode: BbParseMode | None = Field(None, alias="parseMode")
 
 
 class PagingSettings(BaseModel):
-    posts_per_page: Optional[int] = Field(None, alias="postsPerPage")
-    comments_per_page: Optional[int] = Field(None, alias="commentsPerPage")
-    topics_per_page: Optional[int] = Field(None, alias="topicsPerPage")
-    messages_per_page: Optional[int] = Field(None, alias="messagesPerPage")
-    entities_per_page: Optional[int] = Field(None, alias="entitiesPerPage")
+    posts_per_page: int | None = Field(None, alias="postsPerPage")
+    comments_per_page: int | None = Field(None, alias="commentsPerPage")
+    topics_per_page: int | None = Field(None, alias="topicsPerPage")
+    messages_per_page: int | None = Field(None, alias="messagesPerPage")
+    entities_per_page: int | None = Field(None, alias="entitiesPerPage")
 
 
 class UserSettings(BaseModel):
-    color_schema: Optional[ColorSchema] = Field(None, alias="colorSchema")
-    nanny_greetings_message: Optional[str] = Field(None, alias="nannyGreetingsMessage")
-    paging: Optional[PagingSettings] = None
+    color_schema: ColorSchema | None = Field(None, alias="colorSchema")
+    nanny_greetings_message: str | None = Field(None, alias="nannyGreetingsMessage")
+    paging: PagingSettings | None = None
 
 
 class UserDetails(BaseModel):
-    login: Optional[str] = None
-    roles: List[UserRole]
-    medium_picture_url: Optional[str] = Field(None, alias="mediumPictureUrl")
-    small_picture_url: Optional[str] = Field(None, alias="smallPictureUrl")
-    status: Optional[str] = Field(None, alias="status")
+    login: str | None = None
+    roles: list[UserRole]
+    medium_picture_url: str | None = Field(None, alias="mediumPictureUrl")
+    small_picture_url: str | None = Field(None, alias="smallPictureUrl")
+    status: str | None = Field(None, alias="status")
     rating: Rating
-    online: Optional[datetime] = Field(None, alias="online")
-    name: Optional[str] = Field(None, alias="name")
-    location: Optional[str] = Field(None, alias="location")
-    registration: Optional[datetime] = None
-    icq: Optional[str] = Field(None, alias="icq")
-    skype: Optional[str] = Field(None, alias="skype")
-    original_picture_url: Optional[str] = Field(None, alias="originalPictureUrl")
-    info: Optional[InfoBbText] = None
-    settings: Optional[UserSettings] = None
+    online: datetime | None = Field(None, alias="online")
+    name: str | None = Field(None, alias="name")
+    location: str | None = Field(None, alias="location")
+    registration: datetime | None = None
+    icq: str | None = Field(None, alias="icq")
+    skype: str | None = Field(None, alias="skype")
+    original_picture_url: str | None = Field(None, alias="originalPictureUrl")
+    info: InfoBbText | None = None
+    settings: UserSettings | None = None
 
     @field_validator("info", mode="before")
     @classmethod
-    def _empty_info_to_none(cls, value: Any) -> Any:
+    def _empty_info_to_none(cls, value: object) -> object:
         # The API serializes an absent InfoBbText as an empty string rather than
         # null/object; normalize it so it matches the schema's object type.
+        #
+        # `object` rather than `Any`: a before-validator really does receive
+        # arbitrary raw JSON, but `object` forces a narrowing check before the
+        # value is used, whereas `Any` would silently allow any operation on it.
         if value == "":
             return None
         return value
@@ -69,5 +75,6 @@ class UserDetails(BaseModel):
 
 class UserDetailsEnvelope(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    resource: Optional[UserDetails] = None
-    metadata: Optional[Any] = None
+    resource: UserDetails | None = None
+    # See the note on UserEnvelope.metadata: untyped in swagger, so `object`.
+    metadata: object | None = None

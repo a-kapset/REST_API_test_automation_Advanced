@@ -1,6 +1,5 @@
 import allure
 import httpx
-
 from restclient.client import RestClient
 
 

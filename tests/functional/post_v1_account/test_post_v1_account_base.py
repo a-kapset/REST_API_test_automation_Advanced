@@ -1,4 +1,5 @@
 import allure
+
 from checkers.post_v1_account_checker import PostV1AccountChecker
 from helpers.account_helper import AccountHelper
 from tests.user import User
