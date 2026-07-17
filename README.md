@@ -70,9 +70,7 @@ clients/http/            Low-level API clients (transport + typed methods)
 services/                Facades grouping clients per service (DmApiAccount, MailHogApi)
 helpers/                 AccountHelper — multi-step business flows + retrier decorator
 checkers/                Reusable response assertions (status code, hamcrest, assertpy)
-packages/
-  restclient/              RestClient (httpx wrapper), Configuration, allure utilities
-  notifier/                Standalone Telegram sender for the coverage report
+tg_notifier/             Standalone Telegram sender for the swagger-coverage report
 tests/
   conftest.py              Fixtures, CLI options (--env), config loading
   functional/              Functional tests, grouped by service/endpoint
@@ -99,9 +97,9 @@ Test → Checker (assert)          Test → AccountHelper (business flow)
                                       RestClient               ← httpx transport
 ```
 
-- **`RestClient`** (`packages/restclient/client.py`) wraps `httpx.AsyncClient` and
-  centralizes logging, curl generation, Allure attachments, optional
-  swagger-coverage recording, and `raise_for_status()`.
+- **`RestClient`** (external [`restclient`](https://github.com/SDET-org/rest_client)
+  package) wraps `httpx.AsyncClient` and centralizes logging, curl generation,
+  Allure attachments, optional swagger-coverage recording, and `raise_for_status()`.
 - **API clients** (`AccountApi`, `LoginApi`, `MailhogApi`) subclass `RestClient`
   and expose one typed method per endpoint, serializing pydantic request models
   and (optionally) validating responses into pydantic models.
