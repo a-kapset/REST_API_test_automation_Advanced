@@ -79,7 +79,7 @@ tests/
   user.py                  User NamedTuple (test-user credentials)
 config/                  Per-environment YAML (stg.yaml, prod.yaml) read by Vyper
 swagger/                 OpenAPI 3.0.1 contract for the account service
-.github/workflows/       CI pipeline (lint → test → Allure report → GitHub Pages)
+.github/workflows/       CI caller — delegates to the shared reusable workflow
 ```
 
 ## Architecture
@@ -489,17 +489,31 @@ template, stickers on pass/fail, mentions on failure, etc.).
 
 ## Continuous integration
 
-`.github/workflows/python-tests.yml` runs on every push and pull request:
+`.github/workflows/python-tests.yml` runs on every push and pull request. It no
+longer defines the jobs itself — it is a thin **caller** that delegates to a
+shared **reusable workflow** kept in the org repo
+[`SDET-org/common-pipeline`](https://github.com/SDET-org/common-pipeline)
+(`.github/workflows/tests-common-python.yml`), passing secrets via
+`secrets: inherit`:
+
+```yaml
+jobs:
+  python-tests:
+    uses: SDET-org/common-pipeline/.github/workflows/tests-common-python.yml@main
+    secrets: inherit
+```
+
+The shared pipeline runs the same stages for every microrepo in the org:
 
 1. **`mypy-linter`** and **`ruff-checker`** — static checks (Python 3.14).
 2. **`test`** — installs Java + Poetry and runs
-   `pytest ./tests --swagger-coverage`, then sends the coverage report to
-   Telegram and uploads the Allure results as an artifact.
+   `pytest ./tests --swagger-coverage`, then uploads the Allure results as an
+   artifact (the Telegram coverage-report step is available but commented out).
 3. **`generate-report`** / **`publish-report`** — build the Allure HTML report and
    deploy it to **GitHub Pages**.
 
 The published report is available at
-<https://a-kapset.github.io/REST_API_test_automation_Advanced/>. Telegram
+<https://sdet-org.github.io/REST_API_test_automation_Advanced/>. Telegram
 credentials are injected from GitHub Actions **secrets**, never from the repo.
 
 ## Docker
