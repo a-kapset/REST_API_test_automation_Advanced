@@ -232,11 +232,25 @@ Run it through Poetry instead:
 ```bash
 poetry run ruff format .   # format all files (like Black)
 poetry run ruff check .    # run the linter
+poetry run ruff check --fix .   # apply the autofixable ones
 ```
 
 > To drop the `poetry run` prefix, activate the environment first with
 > `poetry env activate` (Poetry 2.x) and paste the printed command into your
 > shell; `ruff` then works directly for that session.
+
+Configured under `[tool.ruff]` in `pyproject.toml`: line length 120, and the rule
+set below on top of Ruff's defaults (`E4`/`E7`/`E9`/`F`).
+
+| Rules | What it buys |
+| --- | --- |
+| `I` | Import sorting, so import blocks stop drifting. |
+| `UP` | pyupgrade: keeps syntax on the 3.13 baseline — `list[x]` over `List[x]`, `x \| None` over `Optional[x]`, `StrEnum` over `(str, Enum)`. |
+| `ANN` | Requires annotations. **`ANN401` bans a bare `Any` in a signature** — see below. |
+| `B`, `SIM` | bugbear / simplify: common correctness and readability traps. |
+
+`tests/**` ignores `ANN201` only: a test function returns `None` by definition,
+so annotating each one adds noise without adding information.
 
 ## Type checking (mypy)
 
@@ -248,8 +262,95 @@ Ruff, it lives in the `lint` dependency group inside Poetry's virtualenv and is
 poetry run mypy .   # static type check across the project
 ```
 
-Settings live in `mypy.ini` (`disallow_untyped_defs = True`, plus a targeted
-`arg-type` suppression for hamcrest matchers under `checkers/`).
+Settings live under `[tool.mypy]` in `pyproject.toml` (rather than a separate
+`mypy.ini`, so both linters share one config file).
+
+### Why these flags
+
+`disallow_untyped_defs` alone only requires that an annotation **exists** — it
+says nothing about whether the annotation is *informative*. Under that flag
+alone, `-> Any` and a bare `dict` both pass, and mypy reports success. That makes
+`Any` the path of least resistance whenever the checker complains, and the green
+build stops meaning anything.
+
+These flags are what close that gap:
+
+| Flag | Catches |
+| --- | --- |
+| `warn_return_any` | `Any` leaking out through a declared return type. |
+| `disallow_any_generics` | Bare `dict` / `Callable`, which are implicitly `Any`-parameterised. |
+| `warn_unused_ignores` | A `# type: ignore` that suppresses nothing — i.e. one added "just in case". |
+| `warn_redundant_casts`, `no_implicit_optional`, `strict_equality`, `warn_unreachable` | Casts that do nothing, implicit `Optional`, comparisons that can never be true, dead branches. |
+
+**Not** enabled: `disallow_untyped_calls` and `disallow_untyped_decorators`.
+allure ships a `py.typed` marker but its own functions carry no annotations, so
+every `@allure.step` / `@allure.title` would error with no fix available on our
+side. These flags apply per *calling* module, so they cannot be scoped to allure
+alone. Worth revisiting if allure ever annotates its API.
+
+### Third-party imports
+
+Only four packages genuinely lack type information: `vyper`, `curlify2`,
+`swagger_coverage_py`, and `assertpy`. They are listed explicitly in a
+`[[tool.mypy.overrides]]` block instead of a project-wide
+`ignore_missing_imports`, which would silently turn *any* unresolved import —
+including a typo'd module name — into `Any`.
+
+A second override disables `arg-type` under `checkers/`: pyhamcrest's stubs
+declare `all_of`/`has_property` as `Matcher[Never]`, so correct matcher usage
+fails to type-check. That is a defect in the stubs, not in the code.
+
+### Typed `**kwargs` in the REST client
+
+`RestClient.get/post/put/delete` forward arbitrary options to httpx, which is a
+genuine use for `**kwargs` — httpx accepts 11 request options, and pinning the
+client to a hand-picked few would mean editing four method signatures every time
+one more is needed.
+
+The flexibility is kept, but typed, via **PEP 692** (`Unpack[TypedDict]`):
+
+```python
+class RequestOptions(TypedDict, total=False):
+    json: JsonBody | None
+    headers: Headers | None
+    timeout: float
+    ...
+
+async def get(self, path: str, **kwargs: Unpack[RequestOptions]) -> httpx.Response: ...
+```
+
+Call sites are unchanged (`client.get(path, headers=..., timeout=5)`), and adding
+another httpx option is a one-line change to `RequestOptions`. The difference
+from `**kwargs: Any` is that the keys and value types are now checked:
+
+```
+client.get(path, headrs={...})   # error: Unexpected keyword argument "headrs"; did you mean "headers"?
+client.get(path, timeout="30")   # error: Argument "timeout" has incompatible type "str"; expected "float"
+```
+
+Under `**kwargs: Any` the first silently does nothing (the header is dropped and
+the request goes out unauthenticated) and the second fails at runtime, inside
+httpx, far from the call site.
+
+Note that `**kwargs` was removed from `AccountHelper`, and that is a different
+case: those methods are a domain facade, not a passthrough. No caller ever used
+the kwargs, and the one thing they carried (`headers`) is already covered by the
+explicit `token` parameter.
+
+### When `Any` is still the right answer
+
+The goal is not zero `Any` — it is that every `Any` is deliberate. Two places
+keep it, both documented at the definition:
+
+- `JsonBody = dict[str, Any]` in the external `rest-client` package
+  (`restclient/client.py`) — a JSON body is
+  arbitrary by nature. The `Any` is confined to the values *inside* the body
+  rather than swallowing the whole signature.
+- Where a value is genuinely unknown but must stay checkable, prefer **`object`**
+  over `Any`: both accept anything, but `object` forces a narrowing check before
+  use, while `Any` disables checking on every expression it touches. Used for the
+  pydantic before-validator input and the `metadata` field that swagger declares
+  with no type at all.
 
 ## Git hooks (pre-commit)
 
@@ -525,7 +626,7 @@ jobs:
 
 The shared pipeline runs the same stages for every microrepo in the org:
 
-1. **`mypy-linter`** and **`ruff-checker`** — static checks (Python 3.14).
+1. **static checks** — `ruff format --check`, `ruff check`, and `mypy`.
 2. **`test`** — installs Java + Poetry and runs
    `pytest ./tests --swagger-coverage`, then uploads the Allure results as an
    artifact (the Telegram coverage-report step is available but commented out).

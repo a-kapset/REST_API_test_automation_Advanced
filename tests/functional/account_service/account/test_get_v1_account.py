@@ -1,4 +1,5 @@
 import allure
+
 from checkers.get_v1_account_checker import GetV1AccountChecker
 from checkers.http_checkers import check_status_code_http
 from helpers.account_helper import AccountHelper

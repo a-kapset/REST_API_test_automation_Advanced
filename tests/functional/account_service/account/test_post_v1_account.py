@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 import allure
 import pytest
+
 from checkers.http_checkers import check_status_code_http
 from helpers.account_helper import AccountHelper
 from tests.user import User
