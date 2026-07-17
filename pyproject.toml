@@ -33,7 +33,8 @@ dependencies = [
     "six (==1.17.0)",
     "httpx (>=0.28.1,<0.29.0)",
     "pytest-asyncio (>=1.4.0,<2.0.0)",
-    "curlify2 (>=2.0.0,<3.0.0)"
+    "curlify2 (>=2.0.0,<3.0.0)",
+    "rest-client @ git+https://github.com/SDET-org/rest_client.git@main"
 ]
 
 
@@ -105,6 +106,15 @@ warn_unreachable = true
 [[tool.mypy.overrides]]
 module = ["vyper.*", "curlify2.*", "swagger_coverage_py.*", "assertpy.*"]
 ignore_missing_imports = true
+
+# rest-client is now an external package (git dependency) and ships no py.typed
+# marker, so mypy would treat it as Any and every client method call would leak
+# Any out through a declared return type (warn_return_any). Its source *is* fully
+# annotated, so follow_untyped_imports makes mypy read those real annotations
+# instead — restoring the same guarantees the in-repo client used to give.
+[[tool.mypy.overrides]]
+module = ["restclient.*"]
+follow_untyped_imports = true
 
 [[tool.mypy.overrides]]
 # pyhamcrest's stubs declare all_of/has_property as Matcher[Never], which makes

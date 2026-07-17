@@ -70,16 +70,14 @@ clients/http/            Low-level API clients (transport + typed methods)
 services/                Facades grouping clients per service (DmApiAccount, MailHogApi)
 helpers/                 AccountHelper — multi-step business flows + retrier decorator
 checkers/                Reusable response assertions (status code, hamcrest, assertpy)
-packages/
-  restclient/              RestClient (httpx wrapper), Configuration, allure utilities
-  notifier/                Standalone Telegram sender for the coverage report
+tg_notifier/             Standalone Telegram sender for the swagger-coverage report
 tests/
   conftest.py              Fixtures, CLI options (--env), config loading
   functional/              Functional tests, grouped by service/endpoint
   user.py                  User NamedTuple (test-user credentials)
 config/                  Per-environment YAML (stg.yaml, prod.yaml) read by Vyper
 swagger/                 OpenAPI 3.0.1 contract for the account service
-.github/workflows/       CI pipeline (lint → test → Allure report → GitHub Pages)
+.github/workflows/       CI caller — delegates to the shared reusable workflow
 ```
 
 ## Architecture
@@ -99,9 +97,9 @@ Test → Checker (assert)          Test → AccountHelper (business flow)
                                       RestClient               ← httpx transport
 ```
 
-- **`RestClient`** (`packages/restclient/client.py`) wraps `httpx.AsyncClient` and
-  centralizes logging, curl generation, Allure attachments, optional
-  swagger-coverage recording, and `raise_for_status()`.
+- **`RestClient`** (external [`restclient`](https://github.com/SDET-org/rest_client)
+  package) wraps `httpx.AsyncClient` and centralizes logging, curl generation,
+  Allure attachments, optional swagger-coverage recording, and `raise_for_status()`.
 - **API clients** (`AccountApi`, `LoginApi`, `MailhogApi`) subclass `RestClient`
   and expose one typed method per endpoint, serializing pydantic request models
   and (optionally) validating responses into pydantic models.
@@ -322,7 +320,8 @@ explicit `token` parameter.
 The goal is not zero `Any` — it is that every `Any` is deliberate. Two places
 keep it, both documented at the definition:
 
-- `JsonBody = dict[str, Any]` in `packages/restclient/client.py` — a JSON body is
+- `JsonBody = dict[str, Any]` in the external `rest-client` package
+  (`restclient/client.py`) — a JSON body is
   arbitrary by nature. The `Any` is confined to the values *inside* the body
   rather than swallowing the whole signature.
 - Where a value is genuinely unknown but must stay checkable, prefer **`object`**
@@ -589,17 +588,31 @@ template, stickers on pass/fail, mentions on failure, etc.).
 
 ## Continuous integration
 
-`.github/workflows/python-tests.yml` runs on every push and pull request:
+`.github/workflows/python-tests.yml` runs on every push and pull request. It no
+longer defines the jobs itself — it is a thin **caller** that delegates to a
+shared **reusable workflow** kept in the org repo
+[`SDET-org/common-pipeline`](https://github.com/SDET-org/common-pipeline)
+(`.github/workflows/tests-common-python.yml`), passing secrets via
+`secrets: inherit`:
 
-1. **`mypy-linter`** and **`ruff-checker`** — static checks (Python 3.14).
+```yaml
+jobs:
+  python-tests:
+    uses: SDET-org/common-pipeline/.github/workflows/tests-common-python.yml@main
+    secrets: inherit
+```
+
+The shared pipeline runs the same stages for every microrepo in the org:
+
+1. **static checks** — `ruff format --check`, `ruff check`, and `mypy`.
 2. **`test`** — installs Java + Poetry and runs
-   `pytest ./tests --swagger-coverage`, then sends the coverage report to
-   Telegram and uploads the Allure results as an artifact.
+   `pytest ./tests --swagger-coverage`, then uploads the Allure results as an
+   artifact (the Telegram coverage-report step is available but commented out).
 3. **`generate-report`** / **`publish-report`** — build the Allure HTML report and
    deploy it to **GitHub Pages**.
 
 The published report is available at
-<https://a-kapset.github.io/REST_API_test_automation_Advanced/>. Telegram
+<https://sdet-org.github.io/REST_API_test_automation_Advanced/>. Telegram
 credentials are injected from GitHub Actions **secrets**, never from the repo.
 
 ## Docker

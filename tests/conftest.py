@@ -6,11 +6,11 @@ from pathlib import Path
 import pytest
 import structlog
 from dotenv import load_dotenv
+from restclient.configuration import Configuration
 from swagger_coverage_py.reporter import CoverageReporter
 from vyper import v
 
 from helpers.account_helper import AccountHelper
-from packages.restclient.configuration import Configuration
 from services.api_mailhog import MailHogApi
 from services.dm_api_account import DmApiAccount
 from tests.user import User

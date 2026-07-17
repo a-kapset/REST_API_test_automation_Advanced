@@ -3,6 +3,7 @@ from typing import Literal, overload
 
 import allure
 import httpx
+from restclient.client import RestClient
 
 from clients.http.dm_api_account.models.change_email import ChangeEmail
 from clients.http.dm_api_account.models.change_password import ChangePassword
@@ -10,7 +11,6 @@ from clients.http.dm_api_account.models.registration import Registration
 from clients.http.dm_api_account.models.reset_password import ResetPassword
 from clients.http.dm_api_account.models.user_details_envelope import UserDetailsEnvelope
 from clients.http.dm_api_account.models.user_envelope import UserEnvelope
-from packages.restclient.client import RestClient
 
 # `validate_response` decides the return type, so each method is overloaded on it:
 # callers get UserEnvelope or httpx.Response directly instead of a union they have

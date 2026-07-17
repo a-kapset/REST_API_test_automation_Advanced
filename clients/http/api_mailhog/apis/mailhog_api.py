@@ -1,7 +1,6 @@
 import allure
 import httpx
-
-from packages.restclient.client import RestClient
+from restclient.client import RestClient
 
 
 class MailhogApi(RestClient):

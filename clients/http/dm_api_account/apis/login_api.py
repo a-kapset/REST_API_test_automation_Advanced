@@ -3,10 +3,10 @@ from typing import Literal, overload
 
 import allure
 import httpx
+from restclient.client import RestClient
 
 from clients.http.dm_api_account.models.login_credentials import LoginCredentials
 from clients.http.dm_api_account.models.user_envelope import UserEnvelope
-from packages.restclient.client import RestClient
 
 # See the note in account_api.py: `validate_response` decides the return type, and
 # only 2xx responses reach the validation because RestClient._send_request calls

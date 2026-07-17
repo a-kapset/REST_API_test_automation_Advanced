@@ -1751,6 +1751,29 @@ socks = ["PySocks (>=1.5.6,!=1.5.7)"]
 use-chardet-on-py3 = ["chardet (>=3.0.2,<8)"]
 
 [[package]]
+name = "rest-client"
+version = "0.1.0"
+description = "rest client for test automation"
+optional = false
+python-versions = ">=3.11,<4.0"
+groups = ["main"]
+files = []
+develop = false
+
+[package.dependencies]
+allure-pytest = "2.16.0"
+curlify2 = ">=2.0.0,<3.0.0"
+httpx = ">=0.28.1,<0.29.0"
+structlog = "26.1.0"
+swagger-coverage = "3.5.2"
+
+[package.source]
+type = "git"
+url = "https://github.com/SDET-org/rest_client.git"
+reference = "main"
+resolved_reference = "0c893214bb5dd6f84023784677a31db47717fdf1"
+
+[[package]]
 name = "retrying"
 version = "1.4.2"
 description = "Retrying"
@@ -2139,4 +2162,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "ae787551b4135d2f2b5a902fd14cc59be71c0b4f51ee0b983efa36f434e1165e"
+content-hash = "2650e1cc6efd5806d96803ffb6d5231b93413f216d97ab4c6bc70f89c0511e6b"
