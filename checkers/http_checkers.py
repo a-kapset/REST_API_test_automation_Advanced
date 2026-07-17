@@ -1,8 +1,8 @@
-import allure
 from collections.abc import Iterator
 from contextlib import contextmanager
 from json import JSONDecodeError
 
+import allure
 import httpx
 from httpx import codes
 

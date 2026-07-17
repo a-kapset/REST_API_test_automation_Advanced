@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
-from telebot import TeleBot
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
+from telebot import TeleBot
 
 # Implemented on the basis of: .venv\Lib\site-packages\telegram_notifier\bot.py
 

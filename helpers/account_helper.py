@@ -1,41 +1,45 @@
 import asyncio
+import functools
+from collections.abc import Awaitable, Callable
+from json import JSONDecodeError, loads
+from typing import Any, Literal, overload
+
 import allure
 import httpx
-from collections.abc import Awaitable, Callable
-from json import loads, JSONDecodeError
-from typing import Any, TypeVar
+
 from clients.http.dm_api_account.models.change_email import ChangeEmail
 from clients.http.dm_api_account.models.change_password import ChangePassword
 from clients.http.dm_api_account.models.login_credentials import LoginCredentials
 from clients.http.dm_api_account.models.registration import Registration
 from clients.http.dm_api_account.models.reset_password import ResetPassword
-from services.dm_api_account import DmApiAccount
+from clients.http.dm_api_account.models.user_details_envelope import UserDetailsEnvelope
+from clients.http.dm_api_account.models.user_envelope import UserEnvelope
 from services.api_mailhog import MailHogApi
-
-
-F = TypeVar("F", bound=Callable[..., Awaitable[Any]])
+from services.dm_api_account import DmApiAccount
 
 
 # Custom decorator implementaion
-def retrier(n: int) -> Callable[[F], F]:
-    def decorator(func: F) -> F:
-        async def wrapper(*args: Any, **kwargs: Any) -> Any:
-            token = None
-            counter = 0
+#
+# **P keeps the wrapped function's signature intact, and T narrows
+# `Awaitable[T | None]` to `Awaitable[T]`: retrying until a value appears is
+# exactly what removes None from the result type, so callers get a plain `str`
+# rather than `str | None` they would have to re-check.
+def retrier[**P, T](attempts: int) -> Callable[[Callable[P, Awaitable[T | None]]], Callable[P, Awaitable[T]]]:
+    def decorator(func: Callable[P, Awaitable[T | None]]) -> Callable[P, Awaitable[T]]:
+        @functools.wraps(func)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            for attempt in range(1, attempts + 1):
+                result = await func(*args, **kwargs)
 
-            while token is None:
-                token = await func(*args, **kwargs)
-                counter += 1
+                if result:
+                    return result
 
-                if token:
-                    return token
+                if attempt < attempts:
+                    await asyncio.sleep(1)
 
-                if counter > 5:
-                    raise AssertionError(f"Activation token is not recieved after {n} attempts")
+            raise AssertionError(f"Activation token is not recieved after {attempts} attempts")
 
-                await asyncio.sleep(1)
-
-        return wrapper  # type: ignore[return-value]
+        return wrapper
 
     return decorator
 
@@ -47,29 +51,75 @@ class AccountHelper:
         self.mailhog_api = mailhog_api
 
     @allure.step("New user registration")
-    async def register_new_user(self, login: str, password: str, email: str) -> Any:
+    async def register_new_user(self, login: str, password: str, email: str) -> httpx.Response:
         registration = Registration(login=login, password=password, email=email)
         resp_acc = await self.dm_account_api.account_api.post_v1_account(registration=registration)
 
         return resp_acc
 
-    @allure.step("Activate user's account")
-    async def activate_user(self, login: str, validate_response: bool = True) -> Any:
-        token = await self._get_activation_token_by_login(login=login)
-        resp_acc_token = await self.dm_account_api.account_api.put_v1_account_token(
-            token=token, validate_response=validate_response
-        )
+    @overload
+    async def activate_user(self, login: str, validate_response: Literal[True] = True) -> UserEnvelope: ...
 
-        return resp_acc_token
+    @overload
+    async def activate_user(self, login: str, validate_response: Literal[False]) -> httpx.Response: ...
+
+    @allure.step("Activate user's account")
+    async def activate_user(self, login: str, validate_response: bool = True) -> UserEnvelope | httpx.Response:
+        token = await self._get_activation_token_by_login(login=login)
+
+        # Branching on the flag (rather than forwarding it) is what lets the
+        # overloads above resolve: each call site passes a Literal, so the client
+        # returns a concrete type instead of a union.
+        if validate_response:
+            return await self.dm_account_api.account_api.put_v1_account_token(token=token, validate_response=True)
+
+        return await self.dm_account_api.account_api.put_v1_account_token(token=token, validate_response=False)
+
+    @overload
+    async def change_email(
+        self, login: str, password: str, email: str, validate_response: Literal[True] = True
+    ) -> UserEnvelope: ...
+
+    @overload
+    async def change_email(
+        self, login: str, password: str, email: str, validate_response: Literal[False]
+    ) -> httpx.Response: ...
 
     @allure.step("Change email address")
-    async def change_email(self, login: str, password: str, email: str, validate_response: bool = True) -> Any:
+    async def change_email(
+        self, login: str, password: str, email: str, validate_response: bool = True
+    ) -> UserEnvelope | httpx.Response:
         change_email = ChangeEmail(login=login, password=password, email=email)
-        resp_acc_email = await self.dm_account_api.account_api.put_v1_account_email(
-            change_email=change_email, validate_response=validate_response
+
+        if validate_response:
+            return await self.dm_account_api.account_api.put_v1_account_email(
+                change_email=change_email, validate_response=True
+            )
+
+        return await self.dm_account_api.account_api.put_v1_account_email(
+            change_email=change_email, validate_response=False
         )
 
-        return resp_acc_email
+    @overload
+    async def user_login(
+        self,
+        login: str,
+        password: str,
+        remember_me: bool = True,
+        validate_response: Literal[True] = True,
+        validate_headers: bool = False,
+    ) -> UserEnvelope: ...
+
+    @overload
+    async def user_login(
+        self,
+        login: str,
+        password: str,
+        remember_me: bool = True,
+        *,
+        validate_response: Literal[False],
+        validate_headers: bool = False,
+    ) -> httpx.Response: ...
 
     @allure.step("User login")
     async def user_login(
@@ -77,37 +127,66 @@ class AccountHelper:
         login: str,
         password: str,
         remember_me: bool = True,
-        status_code: int = 200,
         validate_response: bool = True,
         validate_headers: bool = False,
-    ) -> Any:
+    ) -> UserEnvelope | httpx.Response:
         login_credentials = LoginCredentials(login=login, password=password, remember_me=remember_me)
+
+        if validate_response:
+            return await self.dm_account_api.login_api.post_v1_account_login(
+                login_credentials=login_credentials, validate_response=True
+            )
+
         resp_acc_login = await self.dm_account_api.login_api.post_v1_account_login(
-            login_credentials=login_credentials, validate_response=validate_response
+            login_credentials=login_credentials, validate_response=False
         )
 
         if validate_headers:
             # Reading the auth token off the response headers only makes sense
-            # for a raw httpx.Response (i.e. validate_response=False); a parsed
-            # model has no headers.
-            assert isinstance(resp_acc_login, httpx.Response), "validate_headers=True requires validate_response=False"
+            # for a raw httpx.Response, which is why the overloads pair
+            # validate_headers with validate_response=False.
             assert resp_acc_login.headers["x-dm-auth-token"], "Token has not been recieved"
 
         return resp_acc_login
 
+    @overload
+    async def get_user_info(
+        self, token: str | None = None, validate_response: Literal[True] = True
+    ) -> UserDetailsEnvelope: ...
+
+    @overload
+    async def get_user_info(self, token: str | None = None, *, validate_response: Literal[False]) -> httpx.Response: ...
+
     @allure.step("Get user's account info")
     async def get_user_info(
+        self, token: str | None = None, validate_response: bool = True
+    ) -> UserDetailsEnvelope | httpx.Response:
+        headers = {"x-dm-auth-token": token} if token else None
+
+        if validate_response:
+            return await self.dm_account_api.account_api.get_v1_account(validate_response=True, headers=headers)
+
+        return await self.dm_account_api.account_api.get_v1_account(validate_response=False, headers=headers)
+
+    @overload
+    async def change_password(
         self,
-        token: str | None = None,
-        validate_response: bool = True,
-        **kwargs: Any,
-    ) -> Any:
-        if token:
-            kwargs["headers"] = {"x-dm-auth-token": token}
+        login: str,
+        email: str,
+        old_password: str,
+        new_password: str,
+        validate_response: Literal[True] = True,
+    ) -> UserEnvelope: ...
 
-        resp_acc = await self.dm_account_api.account_api.get_v1_account(validate_response=validate_response, **kwargs)
-
-        return resp_acc
+    @overload
+    async def change_password(
+        self,
+        login: str,
+        email: str,
+        old_password: str,
+        new_password: str,
+        validate_response: Literal[False],
+    ) -> httpx.Response: ...
 
     @allure.step("Get user's password")
     async def change_password(
@@ -117,11 +196,18 @@ class AccountHelper:
         old_password: str,
         new_password: str,
         validate_response: bool = True,
-    ) -> Any:
+    ) -> UserEnvelope | httpx.Response:
         reset_password = ResetPassword(login=login, email=email)
-        await self.dm_account_api.account_api.post_v1_account_password(
-            reset_password=reset_password, validate_response=validate_response
-        )
+
+        if validate_response:
+            await self.dm_account_api.account_api.post_v1_account_password(
+                reset_password=reset_password, validate_response=True
+            )
+        else:
+            await self.dm_account_api.account_api.post_v1_account_password(
+                reset_password=reset_password, validate_response=False
+            )
+
         token = await self._get_reset_password_token_by_login(login=login)
 
         change_password = ChangePassword(
@@ -131,27 +217,24 @@ class AccountHelper:
             new_password=new_password,
         )
 
-        resp_pass_change = await self.dm_account_api.account_api.put_v1_account_password(
-            change_password, validate_response=validate_response
-        )
+        if validate_response:
+            return await self.dm_account_api.account_api.put_v1_account_password(
+                change_password, validate_response=True
+            )
 
-        return resp_pass_change
+        return await self.dm_account_api.account_api.put_v1_account_password(change_password, validate_response=False)
 
     @allure.step("User logout")
-    async def user_logout(self, token: str | None = None, **kwargs: Any) -> Any:
-        if token:
-            kwargs["headers"] = {"x-dm-auth-token": token}
-
-        resp_logout = await self.dm_account_api.login_api.delete_v1_account_login(**kwargs)
+    async def user_logout(self, token: str | None = None) -> httpx.Response:
+        headers = {"x-dm-auth-token": token} if token else None
+        resp_logout = await self.dm_account_api.login_api.delete_v1_account_login(headers=headers)
 
         return resp_logout
 
     @allure.step("User logout from all devices")
-    async def user_logout_all(self, token: str | None = None, **kwargs: Any) -> Any:
-        if token:
-            kwargs["headers"] = {"x-dm-auth-token": token}
-
-        resp_logout_all = await self.dm_account_api.login_api.delete_v1_account_login_all(**kwargs)
+    async def user_logout_all(self, token: str | None = None) -> httpx.Response:
+        headers = {"x-dm-auth-token": token} if token else None
+        resp_logout_all = await self.dm_account_api.login_api.delete_v1_account_login_all(headers=headers)
 
         return resp_logout_all
 
@@ -164,13 +247,13 @@ class AccountHelper:
         self.dm_account_api.account_api.set_headers(auth_token)
         self.dm_account_api.login_api.set_headers(auth_token)
 
-    @retrier(n=5)
-    async def _get_activation_token_by_login(self, login: str) -> Any:
+    @retrier(attempts=5)
+    async def _get_activation_token_by_login(self, login: str) -> str | None:
         # Registration emails carry the activation link under 'ConfirmationLinkUrl'.
         return await self._get_token_by_login(login=login, link_field="ConfirmationLinkUrl")
 
-    @retrier(n=5)
-    async def _get_reset_password_token_by_login(self, login: str) -> Any:
+    @retrier(attempts=5)
+    async def _get_reset_password_token_by_login(self, login: str) -> str | None:
         # Password-reset emails carry the link under 'ConfirmationLinkUri'.
         return await self._get_token_by_login(login=login, link_field="ConfirmationLinkUri")
 
@@ -182,12 +265,12 @@ class AccountHelper:
             # MailHog is a shared inbox: skip messages whose body is not the
             # expected JSON (non-JSON bodies or missing fields).
             try:
-                user_data = loads(item["Content"]["Body"])
+                user_data: dict[str, Any] = loads(item["Content"]["Body"])
 
                 if user_data["Login"] != login:
                     continue
 
-                link = user_data[link_field]
+                link: str = user_data[link_field]
 
             except (JSONDecodeError, KeyError, TypeError):
                 continue

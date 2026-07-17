@@ -1,14 +1,14 @@
-from typing import Optional
+from collections.abc import Mapping
 
 
 class Configuration:
     def __init__(
         self,
         host: str,
-        headers: Optional[dict] = None,
+        headers: Mapping[str, str] | None = None,
         disable_log: bool = True,
         verify: bool = True,
-    ):  # type: ignore
+    ) -> None:
         self.host = host
         self.headers = headers
         self.disable_log = disable_log

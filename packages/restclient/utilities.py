@@ -1,14 +1,17 @@
-import json
 import functools
+import json
+from collections.abc import Awaitable, Callable
+
 import allure
 import curlify2
 import httpx
-from typing import Any, Callable
 
 
-def allure_attach(fn: Callable) -> Callable:
+# **P preserves the wrapped method's exact signature, so decorating
+# RestClient._send_request no longer erases its parameter and return types.
+def allure_attach[**P](fn: Callable[P, Awaitable[httpx.Response]]) -> Callable[P, Awaitable[httpx.Response]]:
     @functools.wraps(fn)
-    async def wrapper(*args: Any, **kwargs: Any) -> httpx.Response:
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> httpx.Response:
         body = kwargs.get("json")
 
         if body:

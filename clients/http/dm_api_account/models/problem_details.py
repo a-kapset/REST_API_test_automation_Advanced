@@ -1,5 +1,4 @@
-from typing import Optional
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ProblemDetails(BaseModel):
@@ -11,8 +10,8 @@ class ProblemDetails(BaseModel):
     """
 
     model_config = ConfigDict(extra="forbid")
-    type: Optional[str] = None
-    title: Optional[str] = None
-    status: Optional[int] = None
-    detail: Optional[str] = None
-    trace_id: Optional[str] = Field(None, alias="traceId")
+    type: str | None = None
+    title: str | None = None
+    status: int | None = None
+    detail: str | None = None
+    trace_id: str | None = Field(None, alias="traceId")
